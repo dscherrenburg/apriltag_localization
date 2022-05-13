@@ -18,11 +18,6 @@ cd ~/localization_ws                                          # Navigate to the 
 rosdep install --from-paths src --ignore-src -r -y            # Install any missing packages
 ```
 #### Generating the supermarket environment
-```
-cd ~/localization_ws/src
-git clone https://github.com/levijn/BEP-Visual-Localization.git
-mv BEP-Visual-Localization retail_store_simulation
-```
 If not installed already, install the following tools:
 ```
 sudo apt install python3-vcstool
@@ -30,6 +25,10 @@ sudo apt install python3-vcstool
 ```
 sudo apt-get install ros-melodic-ros-numpy
 ```
+```
+cd ~/localization_ws/src
+git clone https://github.com/levijn/BEP-Visual-Localization.git
+mv BEP-Visual-Localization retail_store_simulation
 vcs import --input retail_store_simulation/retail_store_simulation.rosinstall .
 cd ..
 sudo rosdep init
