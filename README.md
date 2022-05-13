@@ -67,7 +67,7 @@ cd localization_ws
 source devel/setup.bash
 roscd retail_store_simulation
 source scripts/set_gazebo_env.sh
-roslaunch retail_store_simulation simulation.launch rviz:=true
+roslaunch retail_store_simulation apriltag.launch rviz:=true
 ```
 1. Add Image display by adding a display in the Displays window.
    - Change the Image Topic to /tag_detections_image
