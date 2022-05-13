@@ -23,6 +23,8 @@ cd ~/localization_ws/src
 git clone https://github.com/levijn/BEP-Visual-Localization.git
 mv BEP-Visual-Localization retail_store_simulation
 sudo apt install python3-vcstool
+```
+```
 vcs import --input retail_store_simulation/retail_store_simulation.rosinstall .
 cd ..
 sudo rosdep init
