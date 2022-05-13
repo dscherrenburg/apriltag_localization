@@ -10,13 +10,13 @@ git clone https://github.com/Daan1289/apriltag_localization.git # Clone this git
 catkin_create_pkg apriltag_localization std_msgs rospy roscpp   # Create rospackage
 ```
 #### Cloning the needed Apriltag repositories
-````
+```
 cd ~/localization_ws/src                                      # Navigate to the source space
 git clone https://github.com/AprilRobotics/apriltag.git       # Clone Apriltag library
 git clone https://github.com/AprilRobotics/apriltag_ros.git   # Clone Apriltag ROS wrapper
 cd ~/localization_ws                                          # Navigate to the workspace
 rosdep install --from-paths src --ignore-src -r -y            # Install any missing packages
-````
+```
 #### Generating the supermarket environment
 ```
 cd ~/localization_ws/src
@@ -34,3 +34,42 @@ rosdep install --from-paths src --ignore-src --rosdistro melodic --skip-keys="op
 cd ~/localization_ws
 catkin build && source devel/setup.bash
 ```
+#### Add the tags you want to use in the simulation
+1. Open the file tags.yaml with filepath: /localization_ws/src/apriltag_ros/apriltag_ros/config/tags.yaml
+2. Add the tags to the standalone_tags list. 
+3. Tags needed for this simulation:
+```
+standalone_tags:
+  [
+    {id: 0, size: 0.24},
+    {id: 1, size: 0.24},
+    {id: 2, size: 0.24},
+    {id: 3, size: 0.24},
+    {id: 4, size: 0.24},
+    {id: 5, size: 0.24},
+    {id: 6, size: 0.24},
+    {id: 7, size: 0.24},
+    {id: 8, size: 0.24},
+    {id: 9, size: 0.24}
+  ]
+```
+
+## Startup
+#### Launching apriltag detection (Terminal 1)
+```
+cd localization_ws
+source devel/setup.bash
+roslaunch apriltag_ros continuous_detection.launch camera_name:=/xtion/rgb
+```
+#### Launching retailstore simulation (Terminal 2)
+```
+cd localization_ws
+source devel/setup.bash
+roscd retail_store_simulation
+source scripts/set_gazebo_env.sh
+roslaunch retail_store_simulation simulation.launch rviz:=true
+```
+1. Add Image display by adding a display in the Displays window.
+   - Change the Image Topic to /tag_detections_image
+2. Add TF display by adding a display in the Displays window
+
