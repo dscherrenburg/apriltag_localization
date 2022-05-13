@@ -72,4 +72,10 @@ roslaunch retail_store_simulation simulation.launch rviz:=true
 1. Add Image display by adding a display in the Displays window.
    - Change the Image Topic to /tag_detections_image
 2. Add TF display by adding a display in the Displays window
-
+#### Launching robot localization estimation (Terminal 3)
+```
+cd localization_ws
+source devel/setup.bash
+chmod +x ~/localization_ws/src/apriltag_localization/scripts/combine_map_and_detections.py
+rosrun apriltag_localization combine_map_and_detections.py
+```
