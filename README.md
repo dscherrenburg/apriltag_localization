@@ -22,8 +22,13 @@ rosdep install --from-paths src --ignore-src -r -y            # Install any miss
 cd ~/localization_ws/src
 git clone https://github.com/levijn/BEP-Visual-Localization.git
 mv BEP-Visual-Localization retail_store_simulation
+```
+If not installed already, install the following tools:
+```
 sudo apt install python3-vcstool
 ```
+```
+sudo apt-get install ros-melodic-ros-numpy
 ```
 vcs import --input retail_store_simulation/retail_store_simulation.rosinstall .
 cd ..
