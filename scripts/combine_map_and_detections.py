@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-from os import TMP_MAX
 import rospy
 import tf
 
@@ -23,12 +22,34 @@ class Tag:
         """adds the latest detection to the buffer and checks if the buffer is full"""
         if self.latest_detection is not None and self.check_timediff(detection.header.stamp):     #check if the time difference is too big and clear the buffer
             self.detections = []
+            rospy.loginfo("Detection buffer cleared" + " Tag: " + str(self.id))
             
         self.latest_detection = detection.header.stamp      #update the latest detection time
         self.detections.append(detection)                   #add the detection to the buffer
         if len(self.detections) > self.det_buffer_size:     #if the buffer is too big, remove the oldest detection
             self.detections = self.detections[-self.det_buffer_size:]
-        rospy.loginfo(str(self))
+        # rospy.loginfo(str(self))
+    
+    def moving_avg(self):
+        sum_x, sum_y, sum_z, sum_rx, sum_ry, sum_rz, sum_rw = 0, 0, 0, 0, 0, 0, 0
+        for tf in self.detections:
+            sum_x += tf.transform.translation.x
+            sum_y += tf.transform.translation.y
+            sum_z += tf.transform.translation.z
+            sum_rx += tf.transform.rotation.x
+            sum_ry += tf.transform.rotation.y
+            sum_rz += tf.transform.rotation.z
+            sum_rw += tf.transform.rotation.w
+        
+        avg_pose = Pose()
+        avg_pose.position.x = sum_x / len(self.detections)
+        avg_pose.position.y = sum_y / len(self.detections)
+        avg_pose.position.z = sum_z / len(self.detections)
+        avg_pose.orientation.w = sum_rw / len(self.detections)
+        avg_pose.orientation.x = sum_rx / len(self.detections)
+        avg_pose.orientation.y = sum_ry / len(self.detections)
+        avg_pose.orientation.z = sum_rz / len(self.detections)
+        return avg_pose
         
     
     def check_timediff(self, time):
@@ -77,7 +98,7 @@ class VisualLocalization:
         # set for all tags and dictionary for latest tag transforms
         self.all_tags = set()
         self.latest_tag_transforms = {}
-        self.buffen_len = buffer_len
+        self.buffer_len = buffer_len
 
         # ---OLD---
         self.tag_history = {}
@@ -87,12 +108,15 @@ class VisualLocalization:
     def transformer_callback(self, tf_msgs):
         """Called every time the tf topic is published. Saves the latest transform of each visible tag in self.latest_tag_transforms."""
         for tf_msg in tf_msgs.transforms:
-            self.transformer.setTransform(tf_msg) # add transform message to transformer
-
+            
             if 'tag' in tf_msg.child_frame_id:          # filter for only tag frames
+                self.transformer.setTransform(tf_msg) # add transform message to transformer
+
                 self.all_tags.add(tf_msg.child_frame_id)
                 
                 self.tags[tf_msg.child_frame_id].detected(tf_msg)
+                
+                rospy.loginfo(self.tags[tf_msg.child_frame_id].moving_avg())    
                 
                 # save the latest transform of each tag and update the latest update time. If the list of transforms is to long it removes the oldest transforms.
                 if tf_msg.child_frame_id not in self.latest_tag_transforms:
@@ -101,9 +125,9 @@ class VisualLocalization:
                     self.latest_tag_transforms[tf_msg.child_frame_id]['transform'].append(tf_msg.transform)
                     self.latest_tag_transforms[tf_msg.child_frame_id]['last_updated'] = tf_msg.header.stamp.to_sec()
                     
-                    if len(self.latest_tag_transforms[tf_msg.child_frame_id]['transform']) > self.buffen_len:
-                        self.latest_tag_transforms[tf_msg.child_frame_id]['transform'] = self.latest_tag_transforms[tf_msg.child_frame_id]['transform'][-self.buffen_len:]
-
+                    if len(self.latest_tag_transforms[tf_msg.child_frame_id]['transform']) > self.buffer_len:
+                        self.latest_tag_transforms[tf_msg.child_frame_id]['transform'] = self.latest_tag_transforms[tf_msg.child_frame_id]['transform'][-self.buffer_len:]
+        rospy.loginfo(self.transformer.allFramesAsString())
 
     def get_tag_transform(self, tag_id):
         """returns the latest transform of the tag with the given id"""
