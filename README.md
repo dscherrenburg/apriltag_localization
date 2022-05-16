@@ -5,7 +5,7 @@ Simulating the localization of the TiaGo-robot in a supermarket environment.
 #### Create catkin workspace
 ```
 mkdir -p localization_ws/src                                    # Creating workspace folder
-cd ~/localization_ws/src                                           # Navigate to workspace source folder
+cd ~/localization_ws/src                                        # Navigate to workspace source folder
 git clone https://github.com/Daan1289/apriltag_localization.git # Clone this github
 catkin_create_pkg apriltag_localization std_msgs rospy roscpp   # Create rospackage
 ```
