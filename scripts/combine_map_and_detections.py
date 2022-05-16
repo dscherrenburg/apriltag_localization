@@ -1,16 +1,17 @@
 #!/usr/bin/python
 
+from genpy import Duration
 import rospy
 import tf
 
 from gazebo_msgs.msg import ModelStates
 from apriltag_ros.msg import AprilTagDetectionArray
-from geometry_msgs.msg import Pose, TransformStamped
+from geometry_msgs.msg import Pose, TransformStamped, Transform
 from tf.msg import tfMessage
 
 
 class Tag:
-    def __init__(self, id, world_pose=None, det_buffer_size=10, max_time_diff=rospy.Duration(0.1)):
+    def __init__(self, id, world_pose=None, det_buffer_size=10, max_time_diff=rospy.Duration(2)):
         self.id = id
         self.world_pose = world_pose
         self.latest_detection = None
@@ -22,7 +23,7 @@ class Tag:
         """adds the latest detection to the buffer and checks if the buffer is full"""
         if self.latest_detection is not None and self.check_timediff(detection.header.stamp):     #check if the time difference is too big and clear the buffer
             self.detections = []
-            rospy.loginfo("Detection buffer cleared" + " Tag: " + str(self.id))
+            # rospy.loginfo("Detection buffer cleared" + " Tag: " + str(self.id))
             
         self.latest_detection = detection.header.stamp      #update the latest detection time
         self.detections.append(detection)                   #add the detection to the buffer
@@ -31,6 +32,11 @@ class Tag:
         # rospy.loginfo(str(self))
     
     def moving_avg(self):
+        """calculates the moving average of the detections. Returns the average pose or none if the buffer is empty"""
+        # if self.latest_detection is not None and self.check_timediff(rospy.get_rostime()):     #check if the time difference is too big and clear the buffer
+        #     self.detections = []
+        #     return None
+        
         sum_x, sum_y, sum_z, sum_rx, sum_ry, sum_rz, sum_rw = 0, 0, 0, 0, 0, 0, 0
         for tf in self.detections:
             sum_x += tf.transform.translation.x
@@ -41,14 +47,14 @@ class Tag:
             sum_rz += tf.transform.rotation.z
             sum_rw += tf.transform.rotation.w
         
-        avg_pose = Pose()
-        avg_pose.position.x = sum_x / len(self.detections)
-        avg_pose.position.y = sum_y / len(self.detections)
-        avg_pose.position.z = sum_z / len(self.detections)
-        avg_pose.orientation.w = sum_rw / len(self.detections)
-        avg_pose.orientation.x = sum_rx / len(self.detections)
-        avg_pose.orientation.y = sum_ry / len(self.detections)
-        avg_pose.orientation.z = sum_rz / len(self.detections)
+        avg_pose = Transform()
+        avg_pose.translation.x = sum_x / len(self.detections)
+        avg_pose.translation.y = sum_y / len(self.detections)
+        avg_pose.translation.z = sum_z / len(self.detections)
+        avg_pose.rotation.w = sum_rw / len(self.detections)
+        avg_pose.rotation.x = sum_rx / len(self.detections)
+        avg_pose.rotation.y = sum_ry / len(self.detections)
+        avg_pose.rotation.z = sum_rz / len(self.detections)
         return avg_pose
         
     
@@ -64,7 +70,6 @@ class Tag:
 class Robot:
     def __init__(self):
         self.position = None
-
 
 
 class VisualLocalization:
@@ -86,48 +91,58 @@ class VisualLocalization:
 
         # get location of tags from simulation
         self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
-        self.apriltag_poses = {name : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
+        self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
 
         # subscibers
-        self.tag_detections_sub = rospy.Subscriber('/tag_detections', AprilTagDetectionArray, self.detection_callback)
+        # self.tag_detections_sub = rospy.Subscriber('/tag_detections', AprilTagDetectionArray, self.detection_callback)
         self.transform_sub = rospy.Subscriber('/tf', tfMessage, self.transformer_callback)
         
         # transformer
         self.transformer = tf.TransformerROS()
-
+        for tag in self.apriltag_poses:
+            fixed_tf = TransformStamped()
+            fixed_tf.header.frame_id = 'world'
+            fixed_tf.header.stamp = rospy.Time.now()
+            fixed_tf.child_frame_id = tag
+            fixed_tf.transform.translation.x = self.apriltag_poses[tag].position.x
+            fixed_tf.transform.translation.y = self.apriltag_poses[tag].position.y
+            fixed_tf.transform.translation.z = self.apriltag_poses[tag].position.z
+            fixed_tf.transform.rotation.x = self.apriltag_poses[tag].orientation.x
+            fixed_tf.transform.rotation.y = self.apriltag_poses[tag].orientation.y
+            fixed_tf.transform.rotation.z = self.apriltag_poses[tag].orientation.z  
+            fixed_tf.transform.rotation.w = self.apriltag_poses[tag].orientation.w
+            
+            self.transformer.setTransform(fixed_tf)
+        
         # set for all tags and dictionary for latest tag transforms
         self.all_tags = set()
         self.latest_tag_transforms = {}
         self.buffer_len = buffer_len
 
-        # ---OLD---
-        self.tag_history = {}
-        self.moving_avg_len = moving_avg_len
 
-
-    def transformer_callback(self, tf_msgs):
+    def transformer_callback(self, tf_msgs):    
         """Called every time the tf topic is published. Saves the latest transform of each visible tag in self.latest_tag_transforms."""
         for tf_msg in tf_msgs.transforms:
-            
-            if 'tag' in tf_msg.child_frame_id:          # filter for only tag frames
-                self.transformer.setTransform(tf_msg) # add transform message to transformer
-
-                self.all_tags.add(tf_msg.child_frame_id)
-                
+            if 'xtion_rgb_optical_frame' in tf_msg.header.frame_id:
+                transforminverter = tf.Transformer()
+                transforminverter.setTransform(tf_msg)
+                inverted_tf = transforminverter.lookupTransform(tf_msg.header.frame_id, tf_msg.child_frame_id, tf_msg.header.stamp)
+                self.transformer.setTransform(inverted_tf)
                 self.tags[tf_msg.child_frame_id].detected(tf_msg)
                 
-                rospy.loginfo(self.tags[tf_msg.child_frame_id].moving_avg())    
-                
-                # save the latest transform of each tag and update the latest update time. If the list of transforms is to long it removes the oldest transforms.
-                if tf_msg.child_frame_id not in self.latest_tag_transforms:
-                    self.latest_tag_transforms[tf_msg.child_frame_id] = {'last_updated': tf_msg.header.stamp.to_sec(), 'transform': [tf_msg.transform]}
-                else:
-                    self.latest_tag_transforms[tf_msg.child_frame_id]['transform'].append(tf_msg.transform)
-                    self.latest_tag_transforms[tf_msg.child_frame_id]['last_updated'] = tf_msg.header.stamp.to_sec()
-                    
-                    if len(self.latest_tag_transforms[tf_msg.child_frame_id]['transform']) > self.buffer_len:
-                        self.latest_tag_transforms[tf_msg.child_frame_id]['transform'] = self.latest_tag_transforms[tf_msg.child_frame_id]['transform'][-self.buffer_len:]
+                # moving_avg_tf = TransformStamped()
+                # moving_avg_tf.child_frame_id = tf_msg.child_frame_id
+                # moving_avg_tf.header = tf_msg.header
+                # moving_avg_tf.transform = self.tags[tf_msg.child_frame_id].moving_avg()
+            
+        
         rospy.loginfo(self.transformer.allFramesAsString())
+        # try:
+        #     rospy.loginfo(self.transformer.lookupTransform('xtion_rgb_optical_frame', 'world', rospy.get_rostime()))
+        # except:
+        #     rospy.loginfo("could not find transform")
+            
+
 
     def get_tag_transform(self, tag_id):
         """returns the latest transform of the tag with the given id"""
@@ -153,61 +168,6 @@ class VisualLocalization:
     def get_robot_to_world(self):
         """Returns the robot pose relative to the world."""
         pass
-
-
-    def detection_callback(self, data):
-        """Called every time the tag_detection topic is published. Saves the tag_detection message in self.tag_history. 
-        Then calculates the moving average of each tag.
-        """
-
-        # save the latest relative position of each vissible tag
-        for tag in data.detections:
-            id = tag.id[0]
-            if id not in self.tag_history:
-                self.tag_history[id] = []
-            self.tag_history[id].append(tag.pose.pose.pose)
-            if len(self.tag_history[id]) > self.moving_avg_len:     
-                self.tag_history[id] = self.tag_history[id][-self.moving_avg_len:]
-        
-        # calculate the moving average
-        new_moving_avg = self.moving_avg()
-        # rospy.loginfo(new_moving_avg)
-        # self.calculate_robot_pose_per_tag(new_moving_avg[0], self.apriltag_poses['Apriltag36_11_00006'])
-
-        
-    def moving_avg(self):
-        """calculates the moving average of each tag and returns a dicionary of Pose message types"""
-        avgs = {}
-        for tag_id in self.tag_history:
-            tag_pos = self.tag_history[tag_id]
-            avg_x = sum([pos.position.x for pos in tag_pos]) / self.moving_avg_len
-            avg_y = sum([pos.position.y for pos in tag_pos]) / self.moving_avg_len
-            avg_z = sum([pos.position.z for pos in tag_pos]) / self.moving_avg_len
-            avg_rot_w = sum([pos.orientation.w for pos in tag_pos]) / self.moving_avg_len
-            avg_rot_x = sum([pos.orientation.x for pos in tag_pos]) / self.moving_avg_len
-            avg_rot_y = sum([pos.orientation.y for pos in tag_pos]) / self.moving_avg_len
-            avg_rot_z = sum([pos.orientation.z for pos in tag_pos]) / self.moving_avg_len
-
-            avg_pose = Pose()
-            avg_pose.position.x = avg_x
-            avg_pose.position.y = avg_y
-            avg_pose.position.z = avg_z
-            avg_pose.orientation.w = avg_rot_w
-            avg_pose.orientation.x = avg_rot_x
-            avg_pose.orientation.y = avg_rot_y
-            avg_pose.orientation.z = avg_rot_z
-
-            avgs[tag_id] = avg_pose
-        return avgs
-
-    def calculate_robot_pose_per_tag(self, tf_tag_world, tf_tag_robot):
-        """Calculates the robot pose relative to the world."""
-        tf_world_robot = Pose()
-        tf_world_robot.position.x = tf_tag_world.position.x - tf_tag_robot.position.x
-        tf_world_robot.position.y = tf_tag_world.position.y - tf_tag_robot.position.y
-        tf_world_robot.position.z = tf_tag_world.position.z - tf_tag_robot.position.z
-
-        #rospy.loginfo(tf_world_robot)
 
 
 
