@@ -41,7 +41,7 @@ class VisualLocalization:
         # calculate the moving average
         new_moving_avg = self.moving_avg()
         
-        self.calculate_robot_pose_per_tag(new_moving_avg[0], self.apriltag_poses['Apriltag36_11_00006'])
+        self.calculate_robot_pose_per_tag(new_moving_avg, self.apriltag_poses['Apriltag36_11_00009'])
 
         
     def moving_avg(self):
