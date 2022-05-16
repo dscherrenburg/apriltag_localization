@@ -21,7 +21,7 @@ class Tag:
     
     def detected(self, detection):
         """adds the latest detection to the buffer and checks if the buffer is full"""
-        if self.check_timediff(detection.header.stamp):     #check if the time difference is too big and clear the buffer
+        if self.latest_detection is not None and self.check_timediff(detection.header.stamp):     #check if the time difference is too big and clear the buffer
             self.detections = []
             
         self.latest_detection = detection.header.stamp      #update the latest detection time
@@ -39,6 +39,13 @@ class Tag:
         return "Detected Tag " + str(self.id) + "-> Time: " + str(self.latest_detection) + " at " + str(self.detections[-1].transform.translation)
 
 
+
+class Robot:
+    def __init__(self):
+        self.position = None
+
+
+
 class VisualLocalization:
 
     def __init__(self, moving_avg_len=5, buffer_len=10):
@@ -53,6 +60,8 @@ class VisualLocalization:
                      'tag_8': Tag(8), 
                      'tag_9': Tag(9)
                      }
+        
+        self.robot = Robot()
 
         # get location of tags from simulation
         self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
