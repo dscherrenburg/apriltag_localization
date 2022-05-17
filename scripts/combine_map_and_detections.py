@@ -77,9 +77,10 @@ class VisualLocalization:
     def __init__(self, moving_avg_len=5, buffer_len=10):
         rospy.loginfo("Open tag location yaml file")
         rospy.loginfo(rosparam.list_params("apriltag_localization"))
-        world_loc_tags = rosparam.get_param('apriltag_localization/tags')
+        self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
         rospy.loginfo(world_loc_tags)
-        rospy.loginfo("Create tags")
+        
+        
         self.tags = {'tag_0': Tag(0), 
                      'tag_1': Tag(1), 
                      'tag_2': Tag(2), 
@@ -91,9 +92,11 @@ class VisualLocalization:
                      'tag_8': Tag(8), 
                      'tag_9': Tag(9)
                      }
+        rospy.loginfo("Created tag objects")
         
         self.robot = Robot()
-
+        rospy.loginfo("Create robot object")
+        
         # get location of tags from simulation
         # self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
         # self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
@@ -108,10 +111,13 @@ class VisualLocalization:
                 try:
                     t = self.transform_listener.getLatestCommonTime('odom', tag)
                     t_now = rospy.Time().now()
-                    if t_now.to_sec() - t.to_sec() < -130:
-                        self.transform_listener.waitForTransform('odom', tag, rospy.Time(0), rospy.Duration(1))
-                        camera_tf = self.transform_listener.lookupTransform('odom', tag, rospy.Time(0))
-                        rospy.loginfo(str(tag) + str(camera_tf))
+                    rospy.loginfo("Time diff: " + str(t_now.to_sec() - t.to_sec()))
+                    if t_now.to_sec() - t.to_sec() < 0.3:
+                        self.transform_listener.waitForTransform('odom', tag, rospy.Time(0), rospy.Duration(0.1))
+                        tf_odom_to_tag = self.transform_listener.lookupTransform('odom', tag, rospy.Time(0))
+                        rospy.loginfo(str(tag) + str(tf_odom_to_tag))
+                        
+                        self.calculate_world_position(tag, tf_odom_to_tag)
                 except tf.LookupException or tf.Exception:
                     continue
                 
@@ -121,6 +127,11 @@ class VisualLocalization:
         self.latest_tag_transforms = {}
         self.buffer_len = buffer_len
 
+    def calculate_world_position(self, tag, tf_odom_to_tag):
+        """calculates the map position of the robot in the map frame"""
+        
+        
+    
 
     def transformer_callback(self, tf_msgs):    
         """Called every time the tf topic is published. Saves the latest transform of each visible tag in self.latest_tag_transforms."""
