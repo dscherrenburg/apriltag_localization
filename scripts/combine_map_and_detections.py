@@ -4,6 +4,7 @@ from genpy import Duration
 import rospy
 import tf
 import yaml
+import rosparam
 
 from gazebo_msgs.msg import ModelStates
 from apriltag_ros.msg import AprilTagDetectionArray
@@ -75,7 +76,9 @@ class Robot:
 class VisualLocalization:
     def __init__(self, moving_avg_len=5, buffer_len=10):
         rospy.loginfo("Open tag location yaml file")
-        
+        rospy.loginfo(rosparam.list_params("apriltag_localization"))
+        world_loc_tags = rosparam.get_param('apriltag_localization/tags')
+        rospy.loginfo(world_loc_tags)
         rospy.loginfo("Create tags")
         self.tags = {'tag_0': Tag(0), 
                      'tag_1': Tag(1), 

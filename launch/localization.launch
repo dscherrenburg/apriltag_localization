@@ -1,0 +1,4 @@
+<launch>
+    <rosparam command="load" file="$(find apriltag_localization)/config/tag_world.yaml" ns="apriltag_localization" />
+    <node pkg="apriltag_localization" name="tag_localization_node" type="combine_map_and_detections.py" output="screen"></node>
+</launch>
