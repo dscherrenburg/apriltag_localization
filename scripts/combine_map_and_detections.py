@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from hashlib import new
 from genpy import Duration
 import rospy
 import tf
@@ -12,10 +13,10 @@ from gazebo_msgs.msg import ModelStates
 from apriltag_ros.msg import AprilTagDetectionArray
 from geometry_msgs.msg import Pose, TransformStamped, Transform
 from tf.msg import tfMessage
-
+from quaternion_avg import averageQuaternions
 
 class Tag:
-    def __init__(self, id, world_pose=None, det_buffer_size=10, max_time_diff=rospy.Duration(0.1)):
+    def __init__(self, id, world_pose=None, det_buffer_size=10, max_time_diff=rospy.Duration(0.2)):
         self.id = id
         self.world_pose = world_pose
         self.latest_detection = None
@@ -25,7 +26,7 @@ class Tag:
     
     def detected(self, detection):
         """adds the latest detection to the buffer and checks if the buffer is full"""
-        if self.latest_detection is not None and self.check_timediff(detection.header.stamp):     #check if the time difference is too big and clear the buffer
+        if self.latest_detection is not None and (rospy.get_rostime().to_sec() - self.latest_detection.to_sec()) > 0.2:     #check if the time difference is too big and clear the buffer
             self.detections = []
             # rospy.loginfo("Detection buffer cleared" + " Tag: " + str(self.id))
             
@@ -41,25 +42,31 @@ class Tag:
         #     self.detections = []
         #     return None
         
-        sum_x, sum_y, sum_z, sum_rx, sum_ry, sum_rz, sum_rw = 0, 0, 0, 0, 0, 0, 0
+        sum_x, sum_y, sum_z, q = 0, 0, 0, []
         for tf in self.detections:
-            sum_x += tf.transform.translation.x
-            sum_y += tf.transform.translation.y
-            sum_z += tf.transform.translation.z
-            sum_rx += tf.transform.rotation.x
-            sum_ry += tf.transform.rotation.y
-            sum_rz += tf.transform.rotation.z
-            sum_rw += tf.transform.rotation.w
+            sum_x += tf[0][0]
+            sum_y += tf[0][1]
+            sum_z += tf[0][2]
+            q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
+            # sum_rx = tf[1][0]
+            # sum_ry = tf[1][1]
+            # sum_rz = tf[1][2]
+            # sum_rw = tf[1][3]
         
-        avg_pose = Transform()
-        avg_pose.translation.x = sum_x / len(self.detections)
-        avg_pose.translation.y = sum_y / len(self.detections)
-        avg_pose.translation.z = sum_z / len(self.detections)
-        avg_pose.rotation.w = sum_rw / len(self.detections)
-        avg_pose.rotation.x = sum_rx / len(self.detections)
-        avg_pose.rotation.y = sum_ry / len(self.detections)
-        avg_pose.rotation.z = sum_rz / len(self.detections)
-        return avg_pose
+        moving_avg = ([0, 0, 0], [0, 0, 0, 0, 0])
+        moving_avg[0][0] = sum_x / len(self.detections)
+        moving_avg[0][1] = sum_y / len(self.detections)
+        moving_avg[0][2] = sum_z / len(self.detections)
+
+        # calculate the average of the quaternions in the buffer
+        q_avg = averageQuaternions(np.matrix(q))
+
+        moving_avg[1][3] = q_avg[0]
+        moving_avg[1][0] = q_avg[1]
+        moving_avg[1][1] = q_avg[2]
+        moving_avg[1][2] = q_avg[3]
+
+        return moving_avg
         
     
     def check_timediff(self, time):
@@ -108,18 +115,55 @@ class VisualLocalization:
         # self.transform_sub = rospy.Subscriber('/tf', tfMessage, self.transformer_callback)
         self.transform_listener = tf.TransformListener() 
         
+        # tf publisher
+        self.broadcaster = tf.TransformBroadcaster()
+        
         while not rospy.is_shutdown():
             for tag in self.tags:
                 try:
                     t = self.transform_listener.getLatestCommonTime('base_link', tag)
                     t_now = rospy.Time().now()
-                    # rospy.loginfo("Time diff: " + str(t_now.to_sec() - t.to_sec()))
                     if t_now.to_sec() - t.to_sec() < 0.3:
-                        self.transform_listener.waitForTransform('base_link', tag, rospy.Time(0), rospy.Duration(1))
+                        self.transform_listener.waitForTransform('base_link', tag, rospy.Time(0), rospy.Duration(0.3))
                         tf_odom_to_tag = self.transform_listener.lookupTransform('base_link', tag, rospy.Time(0))
-                        # rospy.loginfo(str(tag) + str(tf_odom_to_tag))
                         
-                        self.calculate_world_position(tag, tf_odom_to_tag)
+                        self.tags[tag].detected(tf_odom_to_tag)
+                        rospy.loginfo(str(self.tags[tag].detections) + '\n')
+                        moving_avg = self.tags[tag].moving_avg()
+                        
+                        world_to_odom = self.calculate_world_position(tag, tf_odom_to_tag)
+                        
+                        # publish world position estimation
+                        new_tf = TransformStamped()
+                        new_tf.header.stamp = rospy.Time.now()
+                        new_tf.header.frame_id = "map"
+                        new_tf.child_frame_id = "world_position"
+                        
+                        new_tf.transform.translation.x = world_to_odom[0][3]
+                        new_tf.transform.translation.y = world_to_odom[1][3]
+                        new_tf.transform.translation.z = world_to_odom[2][3]
+                        new_tf.transform.rotation.w = 1.0
+                        
+                        self.broadcaster.sendTransformMessage(new_tf)
+                        
+                        new_tf_tag = TransformStamped()
+                        new_tf_tag.header.stamp = rospy.Time.now()
+                        new_tf_tag.header.frame_id = "map"
+                        new_tf_tag.child_frame_id = tag + "_test"
+                        tag_obj = self.tags[tag]
+                        new_tf_tag.transform.translation.x = tag_obj.world_pose['x']
+                        new_tf_tag.transform.translation.y = tag_obj.world_pose['y']
+                        new_tf_tag.transform.translation.z = tag_obj.world_pose['z']
+                        q = tft.quaternion_from_euler(tag_obj.world_pose['qx'], tag_obj.world_pose['qy'], tag_obj.world_pose['qz'], 'rxyz')
+                        new_tf_tag.transform.rotation.w = q[3]
+                        new_tf_tag.transform.rotation.x = q[0]
+                        new_tf_tag.transform.rotation.y = q[1]
+                        new_tf_tag.transform.rotation.z = q[2]
+                        
+                        self.broadcaster.sendTransformMessage(new_tf_tag)
+                        
+                        
+                        
                 except tf.LookupException or tf.Exception:
                     continue
                 
@@ -134,7 +178,7 @@ class VisualLocalization:
         tag = self.tags[tag_name]       # get the tag object
         
         # calculate rotation matrix from quaternion
-        translation_mat_world_to_tag = tft.quaternion_matrix((tag.world_pose['qx'], tag.world_pose['qy'], tag.world_pose['qz'], tag.world_pose['qw']))
+        translation_mat_world_to_tag = tft.euler_matrix(tag.world_pose['qx'], tag.world_pose['qy'], tag.world_pose['qz'], 'rxyz')
         translation_mat_odom_to_tag = tft.quaternion_matrix(tf_odom_to_tag[1])
     
         # add the translation to the rotation matrix to get the transformation matrix
@@ -150,13 +194,15 @@ class VisualLocalization:
         translation_mat_tag_to_odom = tft.inverse_matrix(translation_mat_odom_to_tag)
 
         # calculate the translation matrix from the world to odom
-        translation_mat_world_to_odom = translation_mat_world_to_tag * translation_mat_tag_to_odom
+        translation_mat_world_to_odom = np.matmul(translation_mat_world_to_tag, translation_mat_tag_to_odom)
         
         
         # rospy.loginfo("World to tag matrix: " + str(translation_mat_world_to_tag) + "\n\n")
         # rospy.loginfo("Odom to tag matrix: " + str(translation_mat_odom_to_tag) + "\n\n")
         # rospy.loginfo("Tag to odom matrix: " + str(translation_mat_tag_to_odom) + "\n\n")
-        rospy.loginfo("\n" + str(tag_name) + "\n" + "World to Odom matrix: " + str(translation_mat_world_to_odom) + "\n")
+        # rospy.loginfo("\n" + str(tag_name) + "  -  World to Odom matrix: " + "\n" + str(translation_mat_world_to_odom) + "\n")
+        
+        return translation_mat_world_to_odom
     
 
     def transformer_callback(self, tf_msgs):    
