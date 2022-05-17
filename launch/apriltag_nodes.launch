@@ -1,0 +1,8 @@
+<launch>
+	<arg name="node_name" value="tag_world_node" />
+	<arg name="package" value="apriltag_localization" />
+
+	<node name="$(arg node_name)" pkg="$(arg package)" type="tag_world_node" output="screen" />
+
+	<rosparam command="load" file="$(find apriltag_ros)/config/tag_world.yaml" ns="$(arg node_name)" />
+</launch>
