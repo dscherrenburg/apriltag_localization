@@ -11,7 +11,7 @@ from tf.msg import tfMessage
 
 
 class Tag:
-    def __init__(self, id, world_pose=None, det_buffer_size=10, max_time_diff=rospy.Duration(2)):
+    def __init__(self, id, world_pose=None, det_buffer_size=10, max_time_diff=rospy.Duration(0.1)):
         self.id = id
         self.world_pose = world_pose
         self.latest_detection = None
@@ -25,7 +25,7 @@ class Tag:
             self.detections = []
             # rospy.loginfo("Detection buffer cleared" + " Tag: " + str(self.id))
             
-        self.latest_detection = detection.header.stamp      #update the latest detection time
+        self.latest_detection = rospy.get_rostime()      #update the latest detection time
         self.detections.append(detection)                   #add the detection to the buffer
         if len(self.detections) > self.det_buffer_size:     #if the buffer is too big, remove the oldest detection
             self.detections = self.detections[-self.det_buffer_size:]
@@ -75,6 +75,7 @@ class Robot:
 class VisualLocalization:
 
     def __init__(self, moving_avg_len=5, buffer_len=10):
+        rospy.loginfo("Create tags")
         self.tags = {'tag_0': Tag(0), 
                      'tag_1': Tag(1), 
                      'tag_2': Tag(2), 
@@ -89,30 +90,30 @@ class VisualLocalization:
         
         self.robot = Robot()
 
+        
         # get location of tags from simulation
-        self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
-        self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
+        # self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
+        # self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
 
         # subscibers
         # self.tag_detections_sub = rospy.Subscriber('/tag_detections', AprilTagDetectionArray, self.detection_callback)
         self.transform_sub = rospy.Subscriber('/tf', tfMessage, self.transformer_callback)
         
-        # transformer
-        self.transformer = tf.TransformerROS()
-        for tag in self.apriltag_poses:
-            fixed_tf = TransformStamped()
-            fixed_tf.header.frame_id = 'world'
-            fixed_tf.header.stamp = rospy.Time.now()
-            fixed_tf.child_frame_id = tag
-            fixed_tf.transform.translation.x = self.apriltag_poses[tag].position.x
-            fixed_tf.transform.translation.y = self.apriltag_poses[tag].position.y
-            fixed_tf.transform.translation.z = self.apriltag_poses[tag].position.z
-            fixed_tf.transform.rotation.x = self.apriltag_poses[tag].orientation.x
-            fixed_tf.transform.rotation.y = self.apriltag_poses[tag].orientation.y
-            fixed_tf.transform.rotation.z = self.apriltag_poses[tag].orientation.z  
-            fixed_tf.transform.rotation.w = self.apriltag_poses[tag].orientation.w
-            
-            self.transformer.setTransform(fixed_tf)
+        self.transform_listener = tf.TransformListener() 
+        
+        
+        while not rospy.is_shutdown():
+            for tag in self.tags:
+                try:
+                    t = self.transform_listener.getLatestCommonTime('odom', tag)
+                    t_now = rospy.Time().now()
+                    if t_now.to_sec() - t.to_sec() < -130:
+                        self.transform_listener.waitForTransform('odom', tag, rospy.Time(0), rospy.Duration(1))
+                        camera_tf = self.transform_listener.lookupTransform('odom', tag, rospy.Time(0))
+                        rospy.loginfo(str(tag) + str(camera_tf))
+                except tf.LookupException or tf.Exception:
+                    continue
+                
         
         # set for all tags and dictionary for latest tag transforms
         self.all_tags = set()
@@ -124,23 +125,16 @@ class VisualLocalization:
         """Called every time the tf topic is published. Saves the latest transform of each visible tag in self.latest_tag_transforms."""
         for tf_msg in tf_msgs.transforms:
             if 'xtion_rgb_optical_frame' in tf_msg.header.frame_id:
-                transforminverter = tf.Transformer()
-                transforminverter.setTransform(tf_msg)
-                inverted_tf = transforminverter.lookupTransform(tf_msg.header.frame_id, tf_msg.child_frame_id, tf_msg.header.stamp)
-                self.transformer.setTransform(inverted_tf)
+                # transforminverter = tf.Transformer(cache_time=rospy.Duration(10))
+                # transforminverter.setTransform(tf_msg)
+                # inverted_tf = transforminverter.lookupTransform(tf_msg.header.frame_id, tf_msg.child_frame_id, rospy.Time())
+                # self.transformer.setTransform(inverted_tf)
                 self.tags[tf_msg.child_frame_id].detected(tf_msg)
                 
                 # moving_avg_tf = TransformStamped()
                 # moving_avg_tf.child_frame_id = tf_msg.child_frame_id
                 # moving_avg_tf.header = tf_msg.header
                 # moving_avg_tf.transform = self.tags[tf_msg.child_frame_id].moving_avg()
-            
-        
-        rospy.loginfo(self.transformer.allFramesAsString())
-        # try:
-        #     rospy.loginfo(self.transformer.lookupTransform('xtion_rgb_optical_frame', 'world', rospy.get_rostime()))
-        # except:
-        #     rospy.loginfo("could not find transform")
             
 
 
@@ -173,7 +167,9 @@ class VisualLocalization:
 
 if __name__ == '__main__':
     rospy.init_node('tag_localization')
+    rospy.loginfo("Start up node")
     tag_localization = VisualLocalization()
+    
     while not rospy.is_shutdown():
 
         rospy.spin()
