@@ -5,6 +5,8 @@ import rospy
 import tf
 import yaml
 import rosparam
+import tf.transformations as tft
+import numpy as np
 
 from gazebo_msgs.msg import ModelStates
 from apriltag_ros.msg import AprilTagDetectionArray
@@ -78,19 +80,19 @@ class VisualLocalization:
         rospy.loginfo("Open tag location yaml file")
         rospy.loginfo(rosparam.list_params("apriltag_localization"))
         self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
-        rospy.loginfo(world_loc_tags)
+        rospy.loginfo(self.world_loc_tags)
         
         
-        self.tags = {'tag_0': Tag(0), 
-                     'tag_1': Tag(1), 
-                     'tag_2': Tag(2), 
-                     'tag_3': Tag(3), 
-                     'tag_4': Tag(4), 
-                     'tag_5': Tag(5), 
-                     'tag_6': Tag(6), 
-                     'tag_7': Tag(7), 
-                     'tag_8': Tag(8), 
-                     'tag_9': Tag(9)
+        self.tags = {'tag_0': Tag(0, self.world_loc_tags['tag_0']), 
+                     'tag_1': Tag(1, self.world_loc_tags['tag_1']), 
+                     'tag_2': Tag(2, self.world_loc_tags['tag_2']), 
+                     'tag_3': Tag(3, self.world_loc_tags['tag_3']), 
+                     'tag_4': Tag(4, self.world_loc_tags['tag_4']), 
+                     'tag_5': Tag(5, self.world_loc_tags['tag_5']), 
+                     'tag_6': Tag(6, self.world_loc_tags['tag_6']), 
+                     'tag_7': Tag(7, self.world_loc_tags['tag_7']), 
+                     'tag_8': Tag(8, self.world_loc_tags['tag_8']), 
+                     'tag_9': Tag(9, self.world_loc_tags['tag_9'])
                      }
         rospy.loginfo("Created tag objects")
         
@@ -103,19 +105,19 @@ class VisualLocalization:
 
         # subscibers
         # self.tag_detections_sub = rospy.Subscriber('/tag_detections', AprilTagDetectionArray, self.detection_callback)
-        self.transform_sub = rospy.Subscriber('/tf', tfMessage, self.transformer_callback)
+        # self.transform_sub = rospy.Subscriber('/tf', tfMessage, self.transformer_callback)
         self.transform_listener = tf.TransformListener() 
         
         while not rospy.is_shutdown():
             for tag in self.tags:
                 try:
-                    t = self.transform_listener.getLatestCommonTime('odom', tag)
+                    t = self.transform_listener.getLatestCommonTime('base_link', tag)
                     t_now = rospy.Time().now()
-                    rospy.loginfo("Time diff: " + str(t_now.to_sec() - t.to_sec()))
+                    # rospy.loginfo("Time diff: " + str(t_now.to_sec() - t.to_sec()))
                     if t_now.to_sec() - t.to_sec() < 0.3:
-                        self.transform_listener.waitForTransform('odom', tag, rospy.Time(0), rospy.Duration(0.1))
-                        tf_odom_to_tag = self.transform_listener.lookupTransform('odom', tag, rospy.Time(0))
-                        rospy.loginfo(str(tag) + str(tf_odom_to_tag))
+                        self.transform_listener.waitForTransform('base_link', tag, rospy.Time(0), rospy.Duration(1))
+                        tf_odom_to_tag = self.transform_listener.lookupTransform('base_link', tag, rospy.Time(0))
+                        # rospy.loginfo(str(tag) + str(tf_odom_to_tag))
                         
                         self.calculate_world_position(tag, tf_odom_to_tag)
                 except tf.LookupException or tf.Exception:
@@ -127,10 +129,34 @@ class VisualLocalization:
         self.latest_tag_transforms = {}
         self.buffer_len = buffer_len
 
-    def calculate_world_position(self, tag, tf_odom_to_tag):
+    def calculate_world_position(self, tag_name, tf_odom_to_tag):
         """calculates the map position of the robot in the map frame"""
+        tag = self.tags[tag_name]       # get the tag object
+        
+        # calculate rotation matrix from quaternion
+        translation_mat_world_to_tag = tft.quaternion_matrix((tag.world_pose['qx'], tag.world_pose['qy'], tag.world_pose['qz'], tag.world_pose['qw']))
+        translation_mat_odom_to_tag = tft.quaternion_matrix(tf_odom_to_tag[1])
+    
+        # add the translation to the rotation matrix to get the transformation matrix
+        translation_mat_world_to_tag[0][3] = tag.world_pose['x']
+        translation_mat_world_to_tag[1][3] = tag.world_pose['y']
+        translation_mat_world_to_tag[2][3] = tag.world_pose['z']
+
+        translation_mat_odom_to_tag[0][3] = tf_odom_to_tag[0][0]
+        translation_mat_odom_to_tag[1][3] = tf_odom_to_tag[0][1]
+        translation_mat_odom_to_tag[2][3] = tf_odom_to_tag[0][2]
+        
+        # get the inverse of the odom to tag transformation matrix
+        translation_mat_tag_to_odom = tft.inverse_matrix(translation_mat_odom_to_tag)
+
+        # calculate the translation matrix from the world to odom
+        translation_mat_world_to_odom = translation_mat_world_to_tag * translation_mat_tag_to_odom
         
         
+        # rospy.loginfo("World to tag matrix: " + str(translation_mat_world_to_tag) + "\n\n")
+        # rospy.loginfo("Odom to tag matrix: " + str(translation_mat_odom_to_tag) + "\n\n")
+        # rospy.loginfo("Tag to odom matrix: " + str(translation_mat_tag_to_odom) + "\n\n")
+        rospy.loginfo("\n" + str(tag_name) + "\n" + "World to Odom matrix: " + str(translation_mat_world_to_odom) + "\n")
     
 
     def transformer_callback(self, tf_msgs):    
