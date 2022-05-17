@@ -3,6 +3,7 @@
 from genpy import Duration
 import rospy
 import tf
+import yaml
 
 from gazebo_msgs.msg import ModelStates
 from apriltag_ros.msg import AprilTagDetectionArray
@@ -66,15 +67,15 @@ class Tag:
         return "Detected Tag " + str(self.id) + "-> Time: " + str(self.latest_detection) + " at " + str(self.detections[-1].transform.translation)
 
 
-
 class Robot:
     def __init__(self):
         self.position = None
 
 
 class VisualLocalization:
-
     def __init__(self, moving_avg_len=5, buffer_len=10):
+        rospy.loginfo("Open tag location yaml file")
+        
         rospy.loginfo("Create tags")
         self.tags = {'tag_0': Tag(0), 
                      'tag_1': Tag(1), 
@@ -90,7 +91,6 @@ class VisualLocalization:
         
         self.robot = Robot()
 
-        
         # get location of tags from simulation
         # self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
         # self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
@@ -98,9 +98,7 @@ class VisualLocalization:
         # subscibers
         # self.tag_detections_sub = rospy.Subscriber('/tag_detections', AprilTagDetectionArray, self.detection_callback)
         self.transform_sub = rospy.Subscriber('/tf', tfMessage, self.transformer_callback)
-        
         self.transform_listener = tf.TransformListener() 
-        
         
         while not rospy.is_shutdown():
             for tag in self.tags:
@@ -125,16 +123,7 @@ class VisualLocalization:
         """Called every time the tf topic is published. Saves the latest transform of each visible tag in self.latest_tag_transforms."""
         for tf_msg in tf_msgs.transforms:
             if 'xtion_rgb_optical_frame' in tf_msg.header.frame_id:
-                # transforminverter = tf.Transformer(cache_time=rospy.Duration(10))
-                # transforminverter.setTransform(tf_msg)
-                # inverted_tf = transforminverter.lookupTransform(tf_msg.header.frame_id, tf_msg.child_frame_id, rospy.Time())
-                # self.transformer.setTransform(inverted_tf)
                 self.tags[tf_msg.child_frame_id].detected(tf_msg)
-                
-                # moving_avg_tf = TransformStamped()
-                # moving_avg_tf.child_frame_id = tf_msg.child_frame_id
-                # moving_avg_tf.header = tf_msg.header
-                # moving_avg_tf.transform = self.tags[tf_msg.child_frame_id].moving_avg()
             
 
 
@@ -157,7 +146,6 @@ class VisualLocalization:
     def get_robot_to_tag(self):
         """Returns the robot pose relative to the tag."""
         pass
-
 
     def get_robot_to_world(self):
         """Returns the robot pose relative to the world."""
