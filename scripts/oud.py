@@ -54,3 +54,5 @@
 
         
 
+        self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
+        self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
