@@ -69,8 +69,8 @@ class Tag:
         return moving_avg
         
     
-    def check_timediff(self, time):
-        return time - self.latest_detection > self.max_time_diff
+    # def check_timediff(self, time):
+    #     return time - self.latest_detection > self.max_time_diff
     
 
     def __str__(self):
@@ -129,9 +129,9 @@ class VisualLocalization:
                         
                         self.tags[tag].detected(tf_odom_to_tag)
                         rospy.loginfo(str(self.tags[tag].detections) + '\n')
-                        moving_avg = self.tags[tag].moving_avg()
+                        moving_avg_tag = self.tags[tag].moving_avg()
                         
-                        world_to_odom = self.calculate_world_position(tag, tf_odom_to_tag)
+                        world_to_odom = self.calculate_world_position(tag, moving_avg_tag)
                         
                         # publish world position estimation
                         new_tf = TransformStamped()
@@ -232,6 +232,7 @@ class VisualLocalization:
     def get_robot_to_tag(self):
         """Returns the robot pose relative to the tag."""
         pass
+
 
     def get_robot_to_world(self):
         """Returns the robot pose relative to the world."""
