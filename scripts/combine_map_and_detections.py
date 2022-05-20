@@ -11,7 +11,7 @@ from quaternion_avg import averageQuaternions
 
 class Tag:
     """Creates a Tag with information needed for calculations"""
-    def __init__(self, id, world_pose=None, max_time_diff=0.2, buffer_size=10):
+    def __init__(self, id, world_pose=None, max_time_diff=0.3, buffer_size=20):
         """id: the number of the tag_id
            world_pose: the position and orientation in the world
            max_time_diff: the maximum time a detection is kept in the buffer
@@ -23,6 +23,11 @@ class Tag:
         self.detections = []
         self.max_time_diff = max_time_diff
         self.buffer_size = buffer_size
+    
+    def valid_latest_detection(self):
+        if self.latest_detection is None:
+            return False
+        return (rospy.get_rostime().to_sec() - self.latest_detection.to_sec()) < self.max_time_diff
     
     def detected(self, detection):
         """adds the latest detection to the buffer and checks if the buffer is full
@@ -36,17 +41,18 @@ class Tag:
         self.detections.append(detection)                   #add the detection to the buffer
         if len(self.detections) > self.buffer_size:     #if the buffer is too big, remove the oldest detection
             self.detections = self.detections[-self.buffer_size:]
+
+    def median_outlier_filter(lst):
+        pass
     
-    def moving_avg(self, max_error=0.1):
+    def moving_avg(self, max_error=0.05):
         """calculates the moving average of the detections. Returns the average pose or none if the buffer is empty"""
         
-        sum_x, sum_y, sum_z, q, list_x, list_y, filtered_x, filtered_y = 0, 0, 0, [], [], [], [], []
+        sum_z, q, list_x, list_y, filtered_x, filtered_y = 0, [], [], [], [], []
 
         for tf in self.detections:
             list_x.append(tf[0][0])
             list_y.append(tf[0][1])
-            sum_x += tf[0][0]
-            sum_y += tf[0][1]
             sum_z += tf[0][2]
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
         
@@ -132,9 +138,21 @@ class VisualLocalization:
             
             world_to_odom = self.calculate_world_position(tag, moving_avg)
             
+            combined_world_to_odom = self.combining_visible_tags()
+            
             # publish world position estimation and ground truth of visible tags
             self.publish_tf_map_to_tag(tag)
             self.publish_tf_map_to_robot(world_to_odom)
+    
+    def combining_visible_tags(self):
+        position_estimates = []
+        
+        for tag in self.tags:
+            tag_obj = self.tags[tag]
+            if tag_obj.valid_latest_detection():
+                position_estimates.append(tag_obj.moving_avg())
+        
+        rospy.loginfo(position_estimates)
     
     def get_tf_robot_to_tag(self, tag, robot_frame):
         """Returns the transform from the robot_frame to the tag_frame
