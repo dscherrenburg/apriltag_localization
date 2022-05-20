@@ -37,22 +37,40 @@ class Tag:
         if len(self.detections) > self.buffer_size:     #if the buffer is too big, remove the oldest detection
             self.detections = self.detections[-self.buffer_size:]
     
-    def moving_avg(self):
+    def moving_avg(self, max_error=0.1):
         """calculates the moving average of the detections. Returns the average pose or none if the buffer is empty"""
         
-        sum_x, sum_y, sum_z, q = 0, 0, 0, []
+        sum_x, sum_y, sum_z, q, list_x, list_y, filtered_x, filtered_y = 0, 0, 0, [], [], [], [], []
 
         for tf in self.detections:
+            list_x.append(tf[0][0])
+            list_y.append(tf[0][1])
             sum_x += tf[0][0]
             sum_y += tf[0][1]
             sum_z += tf[0][2]
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
+        
+        if len(list_x) > 0:
+            list_x.sort()
+            list_y.sort()
+            median_x = list_x[int(len(list_x)/2)]
+            median_y = list_y[int(len(list_y)/2)]
+
+        for i in range(len(list_x)):
+            err_x = abs(list_x[i] - median_x)
+            err_y = abs(list_y[i] - median_y)
+            if err_x < max_error and err_y < max_error:
+                filtered_x.append(list_x[i])
+                filtered_y.append(list_y[i])
+            else:
+                rospy.loginfo("Measurement deleted from moving average. Value: " + str((list_x[i], list_y[i])))
 
         # calculate the moving average of the detections
         moving_avg = ([0, 0, 0], [0, 0, 0, 0, 0])
-        moving_avg[0][0] = sum_x / len(self.detections)
-        moving_avg[0][1] = sum_y / len(self.detections)
+        moving_avg[0][0] = sum(filtered_x) / len(filtered_x)
+        moving_avg[0][1] = sum(filtered_y) / len(filtered_y)
         moving_avg[0][2] = sum_z / len(self.detections)
+        rospy.loginfo("Moving average: " + str((moving_avg[0][0], moving_avg[0][1])))
 
         # calculate the average of the quaternions in the detections
         q_avg = averageQuaternions(np.matrix(q))
@@ -97,7 +115,6 @@ class VisualLocalization:
         # subscibers
         self.transform_listener = tf.TransformListener() 
 
-        
         # publishers
         self.broadcaster = tf.TransformBroadcaster()
         self.pose_publisher = rospy.Publisher("/initialpose", PoseWithCovarianceStamped, queue_size=10)
@@ -119,7 +136,6 @@ class VisualLocalization:
             self.publish_tf_map_to_tag(tag)
             self.publish_tf_map_to_robot(world_to_odom)
     
-    
     def get_tf_robot_to_tag(self, tag, robot_frame):
         """Returns the transform from the robot_frame to the tag_frame
            tag:         Tag object
@@ -132,66 +148,11 @@ class VisualLocalization:
                 tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
                 return tf_robot_to_tag
             else:
-                rospy.loginfo(tag + ": Latest available transform is to old!")
+                # rospy.loginfo(tag + ": Latest available transform is to old!")
                 return None
         except tf.LookupException or tf.Exception:
-            rospy.loginfo(tag + ": Could not get the transform!")
+            # rospy.loginfo(tag + ": Could not get the transform!")
             return None
-
-    def publish_tf_map_to_robot(self, position_transform):
-        rotation_matrix = position_transform.copy()
-        rotation_matrix[0][3] = 0
-        rotation_matrix[1][3] = 0
-        rotation_matrix[2][3] = 0
-        
-        quat = tft.quaternion_from_matrix(rotation_matrix)
-        
-        new_tf = TransformStamped()
-        new_tf.header.stamp = rospy.Time.now()
-        new_tf.header.frame_id = "map"
-        new_tf.child_frame_id = "world_position"
-        
-        new_tf.transform.translation.x = position_transform[0][3]
-        new_tf.transform.translation.y = position_transform[1][3]
-        new_tf.transform.translation.z = position_transform[2][3]
-        new_tf.transform.rotation.w = quat[3]
-        new_tf.transform.rotation.x = quat[0]
-        new_tf.transform.rotation.y = quat[1]
-        new_tf.transform.rotation.z = quat[2]
-        
-        robot_pose = PoseWithCovarianceStamped()
-        robot_pose.header.frame_id = "map"
-        robot_pose.pose.pose.position.x = position_transform[0][3]
-        robot_pose.pose.pose.position.y = position_transform[1][3]
-        robot_pose.pose.pose.position.z = position_transform[2][3]
-        robot_pose.pose.pose.orientation.w = quat[3]
-        robot_pose.pose.pose.orientation.x = quat[0]
-        robot_pose.pose.pose.orientation.y = quat[1]
-        robot_pose.pose.pose.orientation.z = quat[2]
-        
-        self.pose_publisher.publish(robot_pose)
-        
-        self.broadcaster.sendTransformMessage(new_tf)
-        
-    def publish_tf_map_to_tag(self, tag_name):
-        """Publishes the transform from the map to the tag_name that is inserted
-           tag_name: Name of the tag; e.g. 'tag_0'"""
-        new_tf_tag = TransformStamped()
-        new_tf_tag.header.stamp = rospy.Time.now()
-        new_tf_tag.header.frame_id = "map"
-        new_tf_tag.child_frame_id = tag + "_test"
-        tag_obj = self.tags[tag_name]
-        
-        new_tf_tag.transform.translation.x = tag_obj.world_pose['x']
-        new_tf_tag.transform.translation.y = tag_obj.world_pose['y']
-        new_tf_tag.transform.translation.z = tag_obj.world_pose['z']
-        q = tft.quaternion_from_euler(tag_obj.world_pose['qx'], tag_obj.world_pose['qy'], tag_obj.world_pose['qz'], 'rxyz')
-        new_tf_tag.transform.rotation.w = q[3]
-        new_tf_tag.transform.rotation.x = q[0]
-        new_tf_tag.transform.rotation.y = q[1]
-        new_tf_tag.transform.rotation.z = q[2]
-        
-        self.broadcaster.sendTransformMessage(new_tf_tag)
     
     def calculate_world_position(self, tag_name, tf_odom_to_tag):
         """calculates the position and orientation of the robot in the map frame
@@ -226,8 +187,62 @@ class VisualLocalization:
         
         return translation_mat_world_to_odom
     
-
-
+    def publish_tf_map_to_robot(self, position_transform):
+        rotation_matrix = position_transform.copy()
+        rotation_matrix[0][3] = 0
+        rotation_matrix[1][3] = 0
+        rotation_matrix[2][3] = 0
+        
+        quat = tft.quaternion_from_matrix(rotation_matrix)
+        
+        new_tf = TransformStamped()
+        new_tf.header.stamp = rospy.Time.now()
+        new_tf.header.frame_id = "map"
+        new_tf.child_frame_id = "world_position"
+        
+        new_tf.transform.translation.x = position_transform[0][3]
+        new_tf.transform.translation.y = position_transform[1][3]
+        new_tf.transform.translation.z = position_transform[2][3]
+        new_tf.transform.rotation.w = quat[3]
+        new_tf.transform.rotation.x = quat[0]
+        new_tf.transform.rotation.y = quat[1]
+        new_tf.transform.rotation.z = quat[2]
+        
+        robot_pose = PoseWithCovarianceStamped()
+        robot_pose.header.frame_id = "map"
+        robot_pose.pose.pose.position.x = position_transform[0][3]
+        robot_pose.pose.pose.position.y = position_transform[1][3]
+        robot_pose.pose.pose.position.z = position_transform[2][3]
+        robot_pose.pose.pose.orientation.w = quat[3]
+        robot_pose.pose.pose.orientation.x = quat[0]
+        robot_pose.pose.pose.orientation.y = quat[1]
+        robot_pose.pose.pose.orientation.z = quat[2]
+        
+        # self.pose_publisher.publish(robot_pose)
+        
+        self.broadcaster.sendTransformMessage(new_tf)
+        
+    def publish_tf_map_to_tag(self, tag_name):
+        """Publishes the transform from the map to the tag_name that is inserted
+           tag_name: Name of the tag; e.g. 'tag_0'"""
+        new_tf_tag = TransformStamped()
+        new_tf_tag.header.stamp = rospy.Time.now()
+        new_tf_tag.header.frame_id = "map"
+        new_tf_tag.child_frame_id = tag_name + "_test"
+        tag_obj = self.tags[tag_name]
+        
+        new_tf_tag.transform.translation.x = tag_obj.world_pose['x']
+        new_tf_tag.transform.translation.y = tag_obj.world_pose['y']
+        new_tf_tag.transform.translation.z = tag_obj.world_pose['z']
+        q = tft.quaternion_from_euler(tag_obj.world_pose['qx'], tag_obj.world_pose['qy'], tag_obj.world_pose['qz'], 'rxyz')
+        new_tf_tag.transform.rotation.w = q[3]
+        new_tf_tag.transform.rotation.x = q[0]
+        new_tf_tag.transform.rotation.y = q[1]
+        new_tf_tag.transform.rotation.z = q[2]
+        
+        self.broadcaster.sendTransformMessage(new_tf_tag)
+    
+    
 
 if __name__ == '__main__':
     rospy.init_node('tag_localization')
