@@ -70,13 +70,13 @@ standalone_tags:
 ## Startup
 #### Launching apriltag detection (Terminal 1)
 ```
-cd localization_ws
+cd ~/localization_ws
 source devel/setup.bash
 roslaunch apriltag_ros continuous_detection.launch camera_name:=/xtion/rgb
 ```
 #### Launching retailstore simulation (Terminal 2)
 ```
-cd localization_ws
+cd ~/localization_ws
 source devel/setup.bash
 roscd retail_store_simulation
 source scripts/set_gazebo_env.sh
@@ -87,7 +87,7 @@ roslaunch retail_store_simulation apriltag.launch rviz:=true
 2. Add TF display by adding a display in the Displays window
 #### Launching robot localization estimation (Terminal 3)
 ```
-cd localization_ws
+cd ~/localization_ws
 source devel/setup.bash
 chmod +x ~/localization_ws/src/apriltag_localization/scripts/combine_map_and_detections.py
 rosrun apriltag_localization combine_map_and_detections.py
