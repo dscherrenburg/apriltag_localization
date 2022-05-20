@@ -28,7 +28,7 @@ def movebase_client(x, y, rotation):
 if __name__ == '__main__':
     try:
         rospy.init_node('movebase_client_py')
-        for position in [(0.0, 0.0, 1.0)]:
+        for position in [(0.0, 0.0, 1.0), (1.0, 0.0, 1.0), (0.0, 1.0, 1.0)]:
             result = movebase_client(position[0], position[1], position[2])
             if result:
                 rospy.loginfo("Goal execution done!")

@@ -1,11 +1,12 @@
 #!/usr/bin/python
+from turtle import position
 import rospy
 import tf
 import rosparam
 import tf.transformations as tft
 import numpy as np
 
-from geometry_msgs.msg import Pose, TransformStamped, Transform
+from geometry_msgs.msg import Pose, TransformStamped, Transform, PoseWithCovarianceStamped
 from quaternion_avg import averageQuaternions
 
 class Tag:
@@ -86,21 +87,23 @@ class VisualLocalization:
         
         # subscibers
         self.transform_listener = tf.TransformListener() 
+
         
         # publishers
         self.broadcaster = tf.TransformBroadcaster()
+        self.pose_publisher = rospy.Publisher("/initialpose", PoseWithCovarianceStamped, queue_size=10)
         
     def run_localization(self):
         """
         Runs the localization algorithm
         """
         for tag in self.tags:
-            tf_odom_to_tag = self.get_tf_robot_to_tag(tag, 'odom')
+            tf_odom_to_tag = self.get_tf_robot_to_tag(tag, 'base_footprint')
             if tf_odom_to_tag is None:
                 continue
             
             self.tags[tag].detected(tf_odom_to_tag)
-            rospy.loginfo(str(self.tags[tag].detections) + '\n')
+            # rospy.loginfo(str(self.tags[tag].detections) + '\n')
             moving_avg = self.tags[tag].moving_avg()
             
             world_to_odom = self.calculate_world_position(tag, moving_avg)
@@ -126,6 +129,13 @@ class VisualLocalization:
             return None
 
     def publish_tf_map_to_robot(self, position_transform):
+        rotation_matrix = position_transform.copy()
+        rotation_matrix[0][3] = 0
+        rotation_matrix[1][3] = 0
+        rotation_matrix[2][3] = 0
+        
+        quat = tft.quaternion_from_matrix(rotation_matrix)
+        
         new_tf = TransformStamped()
         new_tf.header.stamp = rospy.Time.now()
         new_tf.header.frame_id = "map"
@@ -134,7 +144,22 @@ class VisualLocalization:
         new_tf.transform.translation.x = position_transform[0][3]
         new_tf.transform.translation.y = position_transform[1][3]
         new_tf.transform.translation.z = position_transform[2][3]
-        new_tf.transform.rotation.w = 1.0
+        new_tf.transform.rotation.w = quat[3]
+        new_tf.transform.rotation.x = quat[0]
+        new_tf.transform.rotation.y = quat[1]
+        new_tf.transform.rotation.z = quat[2]
+        
+        robot_pose = PoseWithCovarianceStamped()
+        robot_pose.header.frame_id = "map"
+        robot_pose.pose.pose.position.x = position_transform[0][3]
+        robot_pose.pose.pose.position.y = position_transform[1][3]
+        robot_pose.pose.pose.position.z = position_transform[2][3]
+        robot_pose.pose.pose.orientation.w = quat[3]
+        robot_pose.pose.pose.orientation.x = quat[0]
+        robot_pose.pose.pose.orientation.y = quat[1]
+        robot_pose.pose.pose.orientation.z = quat[2]
+        
+        self.pose_publisher.publish(robot_pose)
         
         self.broadcaster.sendTransformMessage(new_tf)
         
