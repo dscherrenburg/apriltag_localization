@@ -10,24 +10,32 @@ from geometry_msgs.msg import Pose, TransformStamped, Transform, PoseWithCovaria
 from quaternion_avg import averageQuaternions
 
 class Tag:
-    def __init__(self, id, world_pose=None, max_time_diff=0.2, det_buffer_size=10):
+    """Creates a Tag with information needed for calculations"""
+    def __init__(self, id, world_pose=None, max_time_diff=0.2, buffer_size=10):
+        """id: the number of the tag_id
+           world_pose: the position and orientation in the world
+           max_time_diff: the maximum time a detection is kept in the buffer
+           buffer_size: the maximum number of detections per tag in the buffer"""
+
         self.id = id
         self.world_pose = world_pose
         self.latest_detection = None
         self.detections = []
         self.max_time_diff = max_time_diff
-        self.det_buffer_size = det_buffer_size
+        self.buffer_size = buffer_size
     
     def detected(self, detection):
-        """adds the latest detection to the buffer and checks if the buffer is full"""
+        """adds the latest detection to the buffer and checks if the buffer is full
+           detection: the transform of the detection of this specific tag"""
+
         if self.latest_detection is not None and (rospy.get_rostime().to_sec() - self.latest_detection.to_sec()) > self.max_time_diff:     #check if the time difference is too big and clear the buffer
             self.detections = []
             rospy.loginfo("Detection buffer cleared" + " Tag: " + str(self.id))
             
         self.latest_detection = rospy.get_rostime()         #update the latest detection time
         self.detections.append(detection)                   #add the detection to the buffer
-        if len(self.detections) > self.det_buffer_size:     #if the buffer is too big, remove the oldest detection
-            self.detections = self.detections[-self.det_buffer_size:]
+        if len(self.detections) > self.buffer_size:     #if the buffer is too big, remove the oldest detection
+            self.detections = self.detections[-self.buffer_size:]
     
     def moving_avg(self):
         """calculates the moving average of the detections. Returns the average pose or none if the buffer is empty"""
@@ -66,8 +74,9 @@ class Robot:
 
 
 class VisualLocalization:
-    def __init__(self, moving_avg_len=5, buffer_len=10):
-        
+    """Class for the calculation of the position of the robot in the world,
+       using the position of the tags and the transforms from the robot to the tags."""
+    def __init__(self):
         # Imports the location of the tags in the world
         self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
         rospy.loginfo("Opened tag location yaml file")
@@ -94,9 +103,7 @@ class VisualLocalization:
         self.pose_publisher = rospy.Publisher("/initialpose", PoseWithCovarianceStamped, queue_size=10)
         
     def run_localization(self):
-        """
-        Runs the localization algorithm
-        """
+        """ Runs the localization algorithm """
         for tag in self.tags:
             tf_odom_to_tag = self.get_tf_robot_to_tag(tag, 'base_footprint')
             if tf_odom_to_tag is None:
@@ -114,13 +121,16 @@ class VisualLocalization:
     
     
     def get_tf_robot_to_tag(self, tag, robot_frame):
+        """Returns the transform from the robot_frame to the tag_frame
+           tag:         Tag object
+           robot_frame: the frame in which you want to calculate the transform to the tag"""
         try:
             t = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
             if t_now.to_sec() - t.to_sec() < 0.3:
                 self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
-                tf_odom_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
-                return tf_odom_to_tag
+                tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
+                return tf_robot_to_tag
             else:
                 rospy.loginfo(tag + ": Latest available transform is to old!")
                 return None
@@ -163,12 +173,14 @@ class VisualLocalization:
         
         self.broadcaster.sendTransformMessage(new_tf)
         
-    def publish_tf_map_to_tag(self, tag):
+    def publish_tf_map_to_tag(self, tag_name):
+        """Publishes the transform from the map to the tag_name that is inserted
+           tag_name: Name of the tag; e.g. 'tag_0'"""
         new_tf_tag = TransformStamped()
         new_tf_tag.header.stamp = rospy.Time.now()
         new_tf_tag.header.frame_id = "map"
         new_tf_tag.child_frame_id = tag + "_test"
-        tag_obj = self.tags[tag]
+        tag_obj = self.tags[tag_name]
         
         new_tf_tag.transform.translation.x = tag_obj.world_pose['x']
         new_tf_tag.transform.translation.y = tag_obj.world_pose['y']
@@ -182,7 +194,9 @@ class VisualLocalization:
         self.broadcaster.sendTransformMessage(new_tf_tag)
     
     def calculate_world_position(self, tag_name, tf_odom_to_tag):
-        """calculates the map position of the robot in the map frame"""
+        """calculates the position and orientation of the robot in the map frame
+           tag_name: Name of the tag used for calculation
+           tf_odom_to_tag: The transform from odom to tag (created with def get_tf_robot_to_tag)"""
         tag = self.tags[tag_name]       # get the tag object
         
         # calculate rotation matrix from quaternion
