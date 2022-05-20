@@ -89,6 +89,5 @@ roslaunch retail_store_simulation apriltag.launch rviz:=true
 ```
 cd ~/localization_ws
 source devel/setup.bash
-chmod +x ~/localization_ws/src/apriltag_localization/scripts/combine_map_and_detections.py
-rosrun apriltag_localization combine_map_and_detections.py
+roslaunch apriltag_localization localization.launch
 ```
