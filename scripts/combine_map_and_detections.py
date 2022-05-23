@@ -13,7 +13,7 @@ from quaternion_avg import averageQuaternions
 
 class Tag:
     """Creates a Tag with information needed for calculations"""
-    def __init__(self, id, world_pose=None, max_time_diff=0.3, buffer_size=5):
+    def __init__(self, id, world_pose=None, max_time_diff=0.3, buffer_size=20):
         """id: the number of the tag_id
            world_pose: the position and orientation in the world
            max_time_diff: the maximum time a detection is kept in the buffer
@@ -78,8 +78,13 @@ class Tag:
             
             for i in range(len(filtered_lsts)):
                 if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
+                    rospy.loginfo(f"List {i} longer then last list:   \n List {filtered_lsts[i]} \n last list: {filtered_lsts[-1]}")
+                    rospy.loginfo(f"Deleting last item from list: {filtered_lsts[i][-1]}")
+
                     del filtered_lsts[i][-1]
         
+        rospy.loginfo("Filtered lists:   " + str(filtered_lsts))
+
         return filtered_lsts        
 
 
@@ -99,7 +104,6 @@ class Tag:
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
         
         filtered = Tag.median_outlier_filter(points)
-        rospy.loginfo("Filtered lists:   " + str(filtered))
         filtered_x, filtered_y, filtered_z = filtered
         
         # if len(list_x) > 0:
