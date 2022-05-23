@@ -72,7 +72,7 @@ standalone_tags:
 ```
 cd ~/localization_ws
 source devel/setup.bash
-roslaunch apriltag_ros continuous_detection.launch camera_name:=/xtion/rgb
+roslaunch apriltag_localization localization.launch camera_name:=/xtion/rgb
 ```
 #### Launching retailstore simulation (Terminal 2)
 ```
