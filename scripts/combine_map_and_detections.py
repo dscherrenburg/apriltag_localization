@@ -14,12 +14,12 @@ from quaternion_avg import averageQuaternions
 class Tag:
     """Creates a Tag with information needed for calculations"""
     def __init__(self, id, world_pose=None, max_time_diff=0.3, buffer_size=20):
-        """
-        id: the number of the tag_id
-        world_pose: the position and orientation in the world
-        max_time_diff: the maximum time a detection is kept in the buffer
-        buffer_size: the maximum number of detections per tag in the buffer
-        """
+        """id: the number of the tag_id
+           world_pose: the position and orientation in the world
+           max_time_diff: the maximum time a detection is kept in the buffer
+           buffer_size: the maximum number of detections per tag in the buffer
+           """
+
         self.id = id
         self.world_pose = world_pose
         self.latest_detection = None
@@ -46,43 +46,87 @@ class Tag:
         
         if len(self.detections) > self.buffer_size:         #if the buffer is too big, remove the oldest detection
             self.detections = self.detections[-self.buffer_size:]
+
+    @staticmethod
+    def median_outlier_filter(points, max_error=0.1):
+        n_params = len(points[0])
+
+        lsts = []
+        filtered_lsts = []
+        medians = []
+
+        for point in points:
+            for i in range(n_params):
+                if i >= len(lsts):
+                    lsts.append([point[i]])
+                else:
+                    lsts[i].append(point[i])
+        
+        for lst in lsts:
+            lst.sort()
+            medians.append(lst[int(len(lst)/2)])
+
+        for point in points:
+            for i in range(n_params):
+                if abs(medians[i] - point[i]) < max_error:
+                    if i >= len(filtered_lsts):
+                        filtered_lsts.append([point[i]])
+                    else:
+                        filtered_lsts[i].append(point[i])
+                else:
+                    break
             
-    def median_outlier_filter(lst):
-        pass
+            for i in range(len(filtered_lsts)):
+                if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
+                    rospy.loginfo(f"List {i} longer then last list:   \n List {filtered_lsts[i]} \n last list: {filtered_lsts[-1]}")
+                    rospy.loginfo(f"Deleting last item from list: {filtered_lsts[i][-1]}")
+
+                    del filtered_lsts[i][-1]
+        
+        rospy.loginfo("Filtered lists:   " + str(filtered_lsts))
+
+        return filtered_lsts        
+
+
     
     def moving_avg(self, max_error=0.05):
         """
         calculates the moving average of the detections. Returns the average pose or none if the buffer is empty
         """
         
-        sum_z, q, list_x, list_y, filtered_x, filtered_y = 0, [], [], [], [], []
+        sum_z, q, list_x, list_y, filtered_x, filtered_y, points = 0, [], [], [], [], [], []
 
         for tf in self.detections:
-            list_x.append(tf[0][0])
-            list_y.append(tf[0][1])
-            sum_z += tf[0][2]
+            # list_x.append(tf[0][0])
+            # list_y.append(tf[0][1])
+            # sum_z += tf[0][2]
+            points.append([tf[0][0], tf[0][1], tf[0][2]])
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
         
-        if len(list_x) > 0:
-            list_x.sort()
-            list_y.sort()
-            median_x = list_x[int(len(list_x)/2)]
-            median_y = list_y[int(len(list_y)/2)]
+        filtered = Tag.median_outlier_filter(points)
+        filtered_x, filtered_y, filtered_z = filtered
+        
+        # if len(list_x) > 0:
+        #     list_x.sort()
+        #     list_y.sort()
+        #     median_x = list_x[int(len(list_x)/2)]
+        #     median_y = list_y[int(len(list_y)/2)]
 
-        for i in range(len(list_x)):
-            err_x = abs(list_x[i] - median_x)
-            err_y = abs(list_y[i] - median_y)
-            if err_x < max_error and err_y < max_error:
-                filtered_x.append(list_x[i])
-                filtered_y.append(list_y[i])
-            else:
-                rospy.loginfo("Measurement deleted from moving average. Value: " + str((list_x[i], list_y[i])))
+        # for i in range(len(list_x)):
+        #     err_x = abs(list_x[i] - median_x)
+        #     err_y = abs(list_y[i] - median_y)
+        #     if err_x < max_error and err_y < max_error:
+        #         filtered_x.append(list_x[i])
+        #         filtered_y.append(list_y[i])
+        #     else:
+        #         rospy.loginfo("Measurement deleted from moving average. Value: " + str((list_x[i], list_y[i])))
 
         # calculate the moving average of the detections
         moving_avg = ([0, 0, 0], [0, 0, 0, 0])
         moving_avg[0][0] = sum(filtered_x) / len(filtered_x)
         moving_avg[0][1] = sum(filtered_y) / len(filtered_y)
-        moving_avg[0][2] = sum_z / len(self.detections)
+        moving_avg[0][2] = sum(filtered_z) / len(filtered_z)
+        rospy.loginfo("Moving average: " + str((moving_avg[0][0], moving_avg[0][1], moving_avg[0][2])))
 
         # calculate the average of the quaternions in the detections
         q_avg = averageQuaternions(np.matrix(q))
