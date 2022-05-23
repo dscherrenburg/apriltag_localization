@@ -1,5 +1,5 @@
 import rospy
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped, Pose, PoseWithCovariance
 from tf.transformations import quaternion_from_matrix
 
 
@@ -26,3 +26,34 @@ def from_matrix_to_transform_stamped(matrix, frame_id, child_frame_id):
     new_tf.transform.rotation.z = quat[2]
     
     return new_tf
+
+def from_matrix_to_pose(matrix):
+    pose = Pose()
+    
+    pose.position.x = matrix[0][3]
+    pose.position.y = matrix[1][3]
+    pose.position.z = matrix[2][3]
+    
+    matrix[0][3] = 0
+    matrix[1][3] = 0
+    matrix[2][3] = 0
+    
+    quat = quaternion_from_matrix(matrix)
+    
+    pose.orientation.w = quat[3]
+    pose.orientation.x = quat[0]
+    pose.orientation.y = quat[1]
+    pose.orientation.z = quat[2]
+    return pose
+
+
+def from_matrix_to_pose_cov_stamped(matrix):
+    pose = PoseWithCovarianceStamped()
+    pose.header.stamp = rospy.Time.now()
+    pose.header.frame_id = "map"
+    
+    pose_with_cov = PoseWithCovariance()
+    pose_with_cov.pose = from_matrix_to_pose(matrix)
+    
+    pose.pose = pose_with_cov
+    return pose

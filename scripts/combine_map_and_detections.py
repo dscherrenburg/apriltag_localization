@@ -139,6 +139,11 @@ class VisualLocalization:
                      }
         rospy.loginfo("Created tag objects")
         
+        # self.tag_publishers = []
+        # for tag in self.tags:
+        #     topic_name = 'apriltag_localization/' + tag
+        #     self.tag_publishers.append[rospy.Publisher(topic_name, PoseWithCovarianceStamped, queue_size=10)]
+        
         # subscibers
         self.transform_listener = tf.TransformListener() 
 
@@ -166,6 +171,13 @@ class VisualLocalization:
             # publish world position estimation and ground truth of visible tags
             self.publish_tf_map_to_tag(tag)
             self.publish_tf_map_to_robot(world_to_odom)
+            # self.publish_tag_to_filter(world_to_odom, tag)
+
+    
+    def publish_tag_to_filter(self, position_estimate, tag):
+        publisher = self.tag_publishers[tag]
+        pose_with_cov_stamped = utility.from_matrix_to_pose_cov_stamped(position_estimate)
+        publisher.publish(pose_with_cov_stamped)
 
 
     def calculate_world_position(self, tag_name, tf_odom_to_tag):
