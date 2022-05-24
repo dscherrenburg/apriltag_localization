@@ -79,8 +79,6 @@ class SimpleRobotPosition:
         self.quaternion = tft.unit_vector(self.quaternion)
 
 
-
-
 class RobotPositionEstimator:
     def __init__(self):
         pass

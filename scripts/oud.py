@@ -56,3 +56,69 @@
 
         self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
         self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
+        
+        
+            def publish_tag_to_filter(self, position_estimate, tag):
+        """ Publishes the position estimate of the tag to the filter. """
+        if tag == 'tag_0':
+            self.tag_pub_0.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_1':
+            self.tag_pub_1.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_2':
+            self.tag_pub_2.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_3':
+            self.tag_pub_3.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_4':
+            self.tag_pub_4.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_5':
+            self.tag_pub_5.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_6':
+            self.tag_pub_6.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_7':
+            self.tag_pub_7.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_8':
+            self.tag_pub_8.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        if tag == 'tag_9':
+            self.tag_pub_9.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_10':
+        #     self.tag_pub_10.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_11':
+        #     self.tag_pub_11.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_12':
+        #     self.tag_pub_12.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_13':
+        #     self.tag_pub_13.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_14':
+        #     self.tag_pub_14.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_15':
+        #     self.tag_pub_15.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_16':
+        #     self.tag_pub_16.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_17':
+        #     self.tag_pub_17.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_18':
+        #     self.tag_pub_18.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+        # if tag == 'tag_19':
+        #     self.tag_pub_19.publish(utility.from_matrix_to_pose_cov_stamped(position_estimate))
+
+
+        self.tag_pub_0 = rospy.Publisher('apriltag_localization/tag_0', PoseWithCovarianceStamped, queue_size=10) 
+        self.tag_pub_1 = rospy.Publisher('apriltag_localization/tag_1', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_2 = rospy.Publisher('apriltag_localization/tag_2', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_3 = rospy.Publisher('apriltag_localization/tag_3', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_4 = rospy.Publisher('apriltag_localization/tag_4', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_5 = rospy.Publisher('apriltag_localization/tag_5', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_6 = rospy.Publisher('apriltag_localization/tag_6', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_7 = rospy.Publisher('apriltag_localization/tag_7', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_8 = rospy.Publisher('apriltag_localization/tag_8', PoseWithCovarianceStamped, queue_size=10)
+        self.tag_pub_9 = rospy.Publisher('apriltag_localization/tag_9', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_10 = rospy.Publisher('apriltag_localization/tag_10', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_11 = rospy.Publisher('apriltag_localization/tag_11', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_12 = rospy.Publisher('apriltag_localization/tag_12', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_13 = rospy.Publisher('apriltag_localization/tag_13', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_14 = rospy.Publisher('apriltag_localization/tag_14', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_15 = rospy.Publisher('apriltag_localization/tag_15', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_16 = rospy.Publisher('apriltag_localization/tag_16', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_17 = rospy.Publisher('apriltag_localization/tag_17', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_18 = rospy.Publisher('apriltag_localization/tag_18', PoseWithCovarianceStamped, queue_size=10)
+        # self.tag_pub_19 = rospy.Publisher('apriltag_localization/tag_19', PoseWithCovarianceStamped, queue_size=10)

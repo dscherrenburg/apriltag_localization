@@ -72,6 +72,7 @@ standalone_tags:
 ```
 cd ~/localization_ws
 source devel/setup.bash
+rosclean purge -y
 roslaunch apriltag_localization localization.launch camera_name:=/xtion/rgb
 ```
 #### Launching retailstore simulation (Terminal 2)
@@ -85,9 +86,11 @@ roslaunch retail_store_simulation apriltag.launch rviz:=true
 1. Add Image display by adding a display in the Displays window.
    - Change the Image Topic to /tag_detections_image
 2. Add TF display by adding a display in the Displays window
-#### Launching robot localization estimation (Terminal 3)
+
+
+Not needed atm
+###### Launching robot localization estimation (Terminal 3)
 ```
 cd ~/localization_ws
 source devel/setup.bash
-roslaunch apriltag_localization localization.launch
 ```
