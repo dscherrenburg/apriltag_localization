@@ -27,6 +27,7 @@ class Tag:
         self.max_time_diff = max_time_diff
         self.buffer_size = buffer_size
         self.latest_position_estimate = None
+        self.latest_distance_to_tag = None
 
     def valid_latest_detection(self):
         if self.latest_detection is None:
@@ -78,55 +79,29 @@ class Tag:
             
             for i in range(len(filtered_lsts)):
                 if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
-                    rospy.loginfo(f"List {i} longer then last list:   \n List {filtered_lsts[i]} \n last list: {filtered_lsts[-1]}")
-                    rospy.loginfo(f"Deleting last item from list: {filtered_lsts[i][-1]}")
-
                     del filtered_lsts[i][-1]
-        
-        rospy.loginfo("Filtered lists:   " + str(filtered_lsts))
 
         return filtered_lsts        
 
 
-    
     def moving_avg(self, max_error=0.05):
         """
         calculates the moving average of the detections. Returns the average pose or none if the buffer is empty
         """
-        
         sum_z, q, list_x, list_y, filtered_x, filtered_y, points = 0, [], [], [], [], [], []
 
         for tf in self.detections:
-            # list_x.append(tf[0][0])
-            # list_y.append(tf[0][1])
-            # sum_z += tf[0][2]
             points.append([tf[0][0], tf[0][1], tf[0][2]])
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
         
         filtered = Tag.median_outlier_filter(points)
         filtered_x, filtered_y, filtered_z = filtered
-        
-        # if len(list_x) > 0:
-        #     list_x.sort()
-        #     list_y.sort()
-        #     median_x = list_x[int(len(list_x)/2)]
-        #     median_y = list_y[int(len(list_y)/2)]
-
-        # for i in range(len(list_x)):
-        #     err_x = abs(list_x[i] - median_x)
-        #     err_y = abs(list_y[i] - median_y)
-        #     if err_x < max_error and err_y < max_error:
-        #         filtered_x.append(list_x[i])
-        #         filtered_y.append(list_y[i])
-        #     else:
-        #         rospy.loginfo("Measurement deleted from moving average. Value: " + str((list_x[i], list_y[i])))
 
         # calculate the moving average of the detections
         moving_avg = ([0, 0, 0], [0, 0, 0, 0])
         moving_avg[0][0] = sum(filtered_x) / len(filtered_x)
         moving_avg[0][1] = sum(filtered_y) / len(filtered_y)
         moving_avg[0][2] = sum(filtered_z) / len(filtered_z)
-        rospy.loginfo("Moving average: " + str((moving_avg[0][0], moving_avg[0][1], moving_avg[0][2])))
 
         # calculate the average of the quaternions in the detections
         q_avg = averageQuaternions(np.matrix(q))
@@ -183,11 +158,6 @@ class VisualLocalization:
                      }
         rospy.loginfo("Created tag objects")
         
-        # self.tag_publishers = []
-        # for tag in self.tags:
-        #     topic_name = 'apriltag_localization/' + tag
-        #     self.tag_publishers.append[rospy.Publisher(topic_name, PoseWithCovarianceStamped, queue_size=10)]
-        
         # subscibers
         self.transform_listener = tf.TransformListener() 
 
@@ -208,20 +178,16 @@ class VisualLocalization:
             moving_avg = self.tags[tag].moving_avg()
             
             world_to_odom = self.calculate_world_position(tag, moving_avg)
-            
-            # self.tags[tag].latest_position_estimate = lt.SimpleRobotPosition.from_tuple_of_lists(world_to_odom)
-            # combined_world_to_odom = self.combining_visible_tags()
+            self.tags[tag].latest_distance_to_tag = utility.distance_robot_tag(moving_avg)
+            self.tags[tag].latest_position_estimate = world_to_odom
+            combined_world_to_odom = self.combining_visible_tags_weighted_average()
             
             # publish world position estimation and ground truth of visible tags
             self.publish_tf_map_to_tag(tag)
-            self.publish_tf_map_to_robot(world_to_odom)
+            self.publish_tf_map_to_robot(combined_world_to_odom)
             # self.publish_tag_to_filter(world_to_odom, tag)
 
     
-    def publish_tag_to_filter(self, position_estimate, tag):
-        publisher = self.tag_publishers[tag]
-        pose_with_cov_stamped = utility.from_matrix_to_pose_cov_stamped(position_estimate)
-        publisher.publish(pose_with_cov_stamped)
 
 
     def calculate_world_position(self, tag_name, tf_odom_to_tag):
@@ -254,18 +220,44 @@ class VisualLocalization:
         return translation_mat_world_to_odom
     
     # NOT USED RIGHT NOW
-    def combining_visible_tags(self):
+    def combining_visible_tags_weighted_average(self):
         position_estimates = []
+        distances = []
         
         for tag in self.tags:
             tag_obj = self.tags[tag]
             if tag_obj.valid_latest_detection():
                 if tag_obj.latest_position_estimate is not None:
+                    distances.append(tag_obj.latest_distance_to_tag)
                     position_estimates.append(tag_obj.latest_position_estimate)
         
-        final_position_estimate = self.position_estimator.estimate_position(position_estimates)
+        if len(position_estimates) == 0:
+            return
         
-        return final_position_estimate
+        weights = utility.distance_weights(distances)
+
+        
+        translations, rotations = [], []
+        for position in position_estimates:
+            translation, rotation = utility.from_matrix_to_tuple(position)
+            translations.append(translation)
+            rotations.append(list(rotation))
+        
+        weighted_avg_x = sum([translations[i][0]*weights[i] for i in range(len(translations))])
+        weighted_avg_y = sum([translations[i][1]*weights[i] for i in range(len(translations))])
+        weighted_avg_z = sum([translations[i][2]*weights[i] for i in range(len(translations))])
+
+        # avg_x = sum([t[0] for t in translations]) / len(translations)
+        # avg_y = sum([t[1] for t in translations]) / len(translations)
+        # avg_z = sum([t[2] for t in translations]) / len(translations)
+        
+        avg_q = averageQuaternions(np.matrix(rotations))
+        avg_tf_matrix = tft.quaternion_matrix(avg_q)
+        avg_tf_matrix[0][3] = weighted_avg_x
+        avg_tf_matrix[1][3] = weighted_avg_y
+        avg_tf_matrix[2][3] = weighted_avg_z
+        # rospy.loginfo(weighted_avg_x_list)
+        return avg_tf_matrix
     
     def get_tf_robot_to_tag(self, tag, robot_frame):
         """
@@ -293,7 +285,7 @@ class VisualLocalization:
         args:
             transformation_matrix: The transformation matrix from the map frame to the robot frame
         """
-        transform_msg = utility.from_matrix_to_transform_stamped(transformation_matrix, "map", "world_position")
+        transform_msg = utility.from_matrix_to_transform_stamped(transformation_matrix, "map", "world_location")
         self.broadcaster.sendTransformMessage(transform_msg)
 
 
@@ -306,8 +298,7 @@ class VisualLocalization:
         tag_obj = self.tags[tag_name]
         tf_tag_msg = tag_obj.get_tf_msg()
         self.broadcaster.sendTransformMessage(tf_tag_msg)
-    
-    
+
 
 if __name__ == '__main__':
     rospy.init_node('tag_localization')

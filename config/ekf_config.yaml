@@ -120,19 +120,12 @@ odom0_relative: false
 odom0_pose_rejection_threshold: 5
 odom0_twist_rejection_threshold: 1
 
-# Further input parameter examples
 # imu0: base_imu
-# imu0_config: [false, false, false,
-#               True, True, True,
-#               false, false, false,
-#               True, True, True,
-#               True, True, False]
-# imu0_queue_size: 2
-# imu0_nodelay: false
-# imu0_differential: false
-# imu0_relative: true
-# imu0_pose_rejection_threshold: 0.4
-# imu0_twist_rejection_threshold: 0.2 
+# imu0_config: [true, true, true,
+#               true, true, true,
+#               true, true, true,
+#               true, true, true,
+#               true, true, true]
 
 pose0: amcl_pose
 pose0_config: [true, true, true,
@@ -140,41 +133,52 @@ pose0_config: [true, true, true,
               false, false, false,
               false, false, false,
               false, false, false]
+pose0_pose_rejection_threshold: 1
+pose0_twist_rejection_threshold: 1
+pose0_differential: true
+pose0_relative: false
 
-pose1: apriltag_localization/tag_0
-pose1_config: [true, true, true,
-              true, true, true,
-              false, false, false,
-              false, false, false,
-              false, false, false]
+
 
 pose2: apriltag_localization/tag_1
 pose2_config: [true, true, true,
               true, true, true,
-              false, false, false,
-              false, false, false,
-              false, false, false]
-
-pose3: apriltag_localization/tag_2
-pose3_config: [true, true, true,
               true, true, true,
-              false, false, false,
-              false, false, false,
-              false, false, false]
+              true, true, true,
+              true, true, true]
+pose2_queue_size: 5
+# pose2_pose_rejection_threshold: 2
+# pose2_twist_rejection_threshold: 2
+pose2_differential: true
+pose2_relative: true
+pose2_nodelay: true
 
 pose4: apriltag_localization/tag_3
 pose4_config: [true, true, true,
               true, true, true,
-              false, false, false,
-              false, false, false,
-              false, false, false]
+              true, true, true,
+              true, true, true,
+              true, true, true]
+pose4_queue_size: 5
+# pose4_pose_rejection_threshold: 2
+# pose4_twist_rejection_threshold: 2
+pose4_differential: true
+pose4_relative: true
+pose4_nodelay: true
 
 pose5: apriltag_localization/tag_4
 pose5_config: [true, true, true,
               true, true, true,
-              false, false, false,
-              false, false, false,
-              false, false, false]
+              true, true, true,
+              true, true, true,
+              true, true, true]
+
+# pose5_pose_rejection_threshold: 2
+# pose5_twist_rejection_threshold: 2
+pose5_differential: false
+pose5_relative: true
+pose5_queue_size: 5
+pose5_nodelay: true
 
 pose6: apriltag_localization/tag_5
 pose6_config: [true, true, true,
@@ -183,12 +187,12 @@ pose6_config: [true, true, true,
               false, false, false,
               false, false, false]
 
-pose7: apriltag_localization/tag_6
-pose7_config: [true, true, true,
-              true, true, true,
-              false, false, false,
-              false, false, false,
-              false, false, false]
+# pose6_pose_rejection_threshold: 2
+# pose6_twist_rejection_threshold: 2
+pose6_differential: false
+pose6_relative: true
+pose6_queue_size: 5
+pose6_nodelay: true
 
 pose8: apriltag_localization/tag_7
 pose8_config: [true, true, true,
@@ -196,6 +200,12 @@ pose8_config: [true, true, true,
               false, false, false,
               false, false, false,
               false, false, false]
+pose8_differential: false
+pose8_relative: true
+# pose8_pose_rejection_threshold: 2
+# pose8_twist_rejection_threshold: 2
+pose8_queue_size: 5
+pose8_nodelay: true
 
 pose9: apriltag_localization/tag_8
 pose9_config: [true, true, true,
@@ -203,8 +213,100 @@ pose9_config: [true, true, true,
               false, false, false,
               false, false, false,
               false, false, false]
+pose9_differential: false
+pose9_relative: true
+# pose9_pose_rejection_threshold: 2
+# pose9_twist_rejection_threshold: 2
+pose9_queue_size: 5
+pose9_nodelay: true
+
+pose10: apriltag_localization/tag_9
+pose10_config: [true, true, true,
+              true, true, true,
+              false, false, false,
+              false, false, false,
+              false, false, false]
+pose10_differential: false
+pose10_relative: true
+# pose10_pose_rejection_threshold: 2
+# pose10_twist_rejection_threshold: 2
+pose10_queue_size: 5
+pose10_nodelay: true
 
 
+pose11: apriltag_localization/tag_0
+pose11_config: [true, true, true,
+              true, true, true,
+              true, true, true,
+              true, true, true,
+              true, true, true]
+pose11_differential: true
+pose11_relative: true
+# pose11_pose_rejection_threshold: 2
+# pose11_twist_rejection_threshold: 2
+pose11_queue_size: 5
+pose11_nodelay: true
+
+pose12: apriltag_localization/tag_11
+pose12_config: [true, true, true,
+              true, true, true,
+              false, false, false,
+              false, false, false,
+              false, false, false]
+pose12_differential: false
+pose12_relative: true
+pose12_pose_rejection_threshold: 2
+pose12_twist_rejection_threshold: 2
+pose12_queue_size: 5
+pose12_nodelay: true
+
+pose13: apriltag_localization/tag_12
+pose13_config: [true, true, true,
+              true, true, true,
+              false, false, false,
+              false, false, false,
+              false, false, false]
+pose13_differential: false
+pose13_relative: true
+pose13_pose_rejection_threshold: 2
+pose13_twist_rejection_threshold: 2
+pose13_queue_size: 5
+pose13_nodelay: true
+
+# pose14: apriltag_localization/tag_13
+# pose14_config: [true, true, true,
+#               true, true, true,
+#               false, false, false,
+#               false, false, false,
+#               false, false, false]
+
+# pose15: apriltag_localization/tag_14
+# pose15_config: [true, true, true,
+#               true, true, true,
+#               false, false, false,
+#               false, false, false,
+#               false, false, false]
+
+# pose16: apriltag_localization/tag_15
+# pose16config: [true, true, true,
+#               true, true, true,
+#               false, false, false,
+#               false, false, false,
+#               false, false, false]
+
+# pose17: apriltag_localization/tag_16
+# pose17_config: [true, true, true,
+#               true, true, true,
+#               false, false, false,
+#               false, false, false,
+#               false, false, false]
+
+# pose18: apriltag_localization/tag_17
+# pose18_config: [true, true, true,
+#               true, true, true,
+#               false, false, false,
+#               false, false, false,
+#               false, false, false]
 
 # [ADVANCED] Some IMUs automatically remove acceleration due to gravity, and others don't. If yours doesn't, please set
 # this to true, and *make sure* your data conforms to REP-103, specifically, that the data is in ENU frame.
