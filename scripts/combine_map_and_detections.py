@@ -68,20 +68,29 @@ class Tag:
 
         for point in points:
             for i in range(n_params):
+                if i == len(filtered_lsts):
+                        filtered_lsts.append([])
+                
                 if abs(medians[i] - point[i]) < max_error:
-                    if i >= len(filtered_lsts):
-                        filtered_lsts.append([point[i]])
-                    else:
-                        filtered_lsts[i].append(point[i])
+                    filtered_lsts[i].append(point[i])
                 else:
+                    rospy.loginfo(str(i) + " -----------------------------------------------------------  Larger than error so breaking")
                     break
+                rospy.loginfo(str(i) + "  No error so passed the test")
             
             for i in range(len(filtered_lsts)):
+                rospy.loginfo(str(i) + "  Checking if list is too long;  len current: {}, len last: {}".format(len(filtered_lsts[i]), len(filtered_lsts[-1])))
                 if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
-                    rospy.loginfo(f"List {i} longer then last list:   \n List {filtered_lsts[i]} \n last list: {filtered_lsts[-1]}")
-                    rospy.loginfo(f"Deleting last item from list: {filtered_lsts[i][-1]}")
+                    rospy.loginfo("List {} longer then last list:   \n List {} \n last list: {}".format(i, filtered_lsts[i], filtered_lsts[-1]))
+                    rospy.loginfo("Deleting last item from list: {}".format(filtered_lsts[i][-1]))
 
                     del filtered_lsts[i][-1]
+        
+        while len(filtered_lsts) < n_params:
+            filtered_lsts.append([])
+        
+        if len(filtered_lsts[0]) == 0:
+            filtered_lsts = Tag.median_outlier_filter(points, np.inf)
         
         rospy.loginfo("Filtered lists:   " + str(filtered_lsts))
 
@@ -89,7 +98,7 @@ class Tag:
 
 
     
-    def moving_avg(self, max_error=0.05):
+    def moving_avg(self, max_error=0.1):
         """
         calculates the moving average of the detections. Returns the average pose or none if the buffer is empty
         """
@@ -123,6 +132,8 @@ class Tag:
 
         # calculate the moving average of the detections
         moving_avg = ([0, 0, 0], [0, 0, 0, 0])
+        if len(filtered_x) == 0:
+            return 0
         moving_avg[0][0] = sum(filtered_x) / len(filtered_x)
         moving_avg[0][1] = sum(filtered_y) / len(filtered_y)
         moving_avg[0][2] = sum(filtered_z) / len(filtered_z)
@@ -294,7 +305,6 @@ class VisualLocalization:
         tag_obj = self.tags[tag_name]
         tf_tag_msg = tag_obj.get_tf_msg()
         self.broadcaster.sendTransformMessage(tf_tag_msg)
-    
     
 
 if __name__ == '__main__':
