@@ -3,23 +3,22 @@ import rospy
 import tf
 import rosparam
 import tf.transformations as tft
-import localization_transforms as lt
 import numpy as np
 import utility
 
 
-from geometry_msgs.msg import TransformStamped, Transform, PoseWithCovarianceStamped
+from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
 from quaternion_avg import averageQuaternions
 
 class Tag:
     """Creates a Tag with information needed for calculations"""
     def __init__(self, id, world_pose=None, max_time_diff=0.3, buffer_size=20):
-        """id: the number of the tag_id
-           world_pose: the position and orientation in the world
-           max_time_diff: the maximum time a detection is kept in the buffer
-           buffer_size: the maximum number of detections per tag in the buffer
-           """
-
+        """
+        -   id: the number of the tag_id
+        -   world_pose: the position and orientation in the world
+        -   max_time_diff: the maximum time a detection is kept in the buffer
+        -   buffer_size: the maximum number of detections per tag in the buffer
+        """
         self.id = id
         self.world_pose = world_pose
         self.latest_detection = None
@@ -30,14 +29,15 @@ class Tag:
         self.latest_distance_to_tag = None
 
     def valid_latest_detection(self):
+        """Checks the latest detection has not expired"""   
         if self.latest_detection is None:
             return False
         return (rospy.get_rostime().to_sec() - self.latest_detection.to_sec()) < self.max_time_diff
     
     def detected(self, detection):
         """
-        adds the latest detection to the buffer and checks if the buffer is full
-        detection: the transform of the detection of this specific tag
+        Adds the latest detection to the buffer and checks if the buffer is full
+        -   detection: the transform of the detection of this specific tag
         """
         if not self.valid_latest_detection():               #check if the time difference is too big and clear the buffer
             self.detections = []
@@ -50,12 +50,14 @@ class Tag:
 
     @staticmethod
     def median_outlier_filter(points, max_error=0.1):
-        n_params = len(points[0])
+        """Deletes the outliers from the list of points.
+        -   points: list of points (each point is a list of translations)
+        -   max_error: the maximum distance from the median"""
+        
+        n_params = len(points[0]) 
+        lsts, filtered_lsts, medians = [], [], []
 
-        lsts = []
-        filtered_lsts = []
-        medians = []
-
+        # Looping through points and adding x, y, z to separate lists
         for point in points:
             for i in range(n_params):
                 if i >= len(lsts):
@@ -63,10 +65,12 @@ class Tag:
                 else:
                     lsts[i].append(point[i])
         
+        # Looping through parameter lists, sorting them to determine the median
         for lst in lsts:
             lst.sort()
             medians.append(lst[int(len(lst)/2)])
 
+        # Looping through points to check if the error from the median is too big. If so it deletes the entire point.
         for point in points:
             for i in range(n_params):
                 if i == len(filtered_lsts):
@@ -75,42 +79,38 @@ class Tag:
                 if abs(medians[i] - point[i]) < max_error:
                     filtered_lsts[i].append(point[i])
                 else:
-                    rospy.loginfo(str(i) + " -----------------------------------------------------------  Larger than error so breaking")
+                    rospy.loginfo("Error larger than allowed sow deleting the point.")
                     break
-                rospy.loginfo(str(i) + "  No error so passed the test")
             
             for i in range(len(filtered_lsts)):
-                rospy.loginfo(str(i) + "  Checking if list is too long;  len current: {}, len last: {}".format(len(filtered_lsts[i]), len(filtered_lsts[-1])))
                 if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
-                    rospy.loginfo("List {} longer then last list:   \n List {} \n last list: {}".format(i, filtered_lsts[i], filtered_lsts[-1]))
-                    rospy.loginfo("Deleting last item from list: {}".format(filtered_lsts[i][-1]))
-
                     del filtered_lsts[i][-1]
         
+        # To make sure that the number of lists is always the same
         while len(filtered_lsts) < n_params:
             filtered_lsts.append([])
         
+        # If there where no valid points it returns just the points without filtering
         if len(filtered_lsts[0]) == 0:
-            filtered_lsts = Tag.median_outlier_filter(points, np.inf)
+            filtered_lsts = lsts
         
-        rospy.loginfo("Filtered lists:   " + str(filtered_lsts))
-
+        # rospy.loginfo("Filtered lists:   " + str(filtered_lsts))
 
         return filtered_lsts        
 
- 
     def moving_avg(self, max_error=0.1):
-
         """
-        calculates the moving average of the detections. Returns the average pose or none if the buffer is empty
+        calculates the moving average of the detections. Returns the average pose or none if the buffer is empty.
+        -   max_error: the maximum error for the median outlier filter
         """
-        sum_z, q, list_x, list_y, filtered_x, filtered_y, points = 0, [], [], [], [], [], []
-
+        # Generates seperate lists with the positions and with the orientation in quaternions
+        position, q = [], []
         for tf in self.detections:
-            points.append([tf[0][0], tf[0][1], tf[0][2]])
+            position.append([tf[0][0], tf[0][1], tf[0][2]])
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
         
-        filtered = Tag.median_outlier_filter(points)
+        # Filters the outliers
+        filtered = Tag.median_outlier_filter(position, max_error)
         filtered_x, filtered_y, filtered_z = filtered
 
         # calculate the moving average of the detections
@@ -159,7 +159,10 @@ class VisualLocalization:
     """Class for the calculation of the position of the robot in the world,
        using the position of the tags and the transforms from the robot to the tags."""
     def __init__(self, tag_combination_mode="weighted_average", filter_mode="median_outlier"):
-        
+        """
+        -   tag_combination_mode: method for the combining of the estimations from seperate tags. ("weighted average", "average")
+        -   filter_mode: method for filtering outliers. ("median_outlier")
+        """
         self.tag_combination_mode = tag_combination_mode
         
         # Imports the location of the tags in the world
@@ -185,8 +188,6 @@ class VisualLocalization:
         # publishers
         self.broadcaster = tf.TransformBroadcaster()
         self.pose_publisher = rospy.Publisher("/initialpose", PoseWithCovarianceStamped, queue_size=10)
-        
-        self.position_estimator = lt.RobotPositionEstimator()
 
     def run_localization(self):
         """ Runs the localization algorithm. """
@@ -244,6 +245,7 @@ class VisualLocalization:
     
     
     def combining_visible_tags_weighted_average(self):
+        """ Combines the position of the tags using a weighted average. \n"""
         position_estimates = []
         distances = []
         
@@ -278,6 +280,7 @@ class VisualLocalization:
         return avg_tf_matrix
     
     def combining_visible_tags_average(self):
+        """ Combines the position of the tags using an average. \n"""
         position_estimates = []
         
         for tag in self.tags:
