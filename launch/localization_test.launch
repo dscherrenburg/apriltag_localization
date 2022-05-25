@@ -1,0 +1,43 @@
+<launch>
+    <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+    <arg name="node_namespace" default="apriltag_ros_continuous_node" />
+    <arg name="camera_name" default="/xtion/rgb" />
+    <arg name="image_topic" default="image_raw" />
+    <arg name="tag_location_file" default="tag_world.yaml"/>
+
+    <arg name="localization_method" default="weighted_average"/>
+    <arg name="buffer_size" default="10"/>
+    <arg name="max_time_diff" default="0.2"/>
+    <arg name="max_error" default="0.1"/>
+
+    <arg name="test_file_location" default="/home/levijn/BEP/simulation_ws/"/>
+    <arg name="test_file_name" default="simple_test"/>
+    <arg name="test_file_format" default=".csv"/>
+  
+    <!-- Set parameters -->
+    <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml" ns="$(arg node_namespace)" />
+    <rosparam command="load" file="$(find apriltag_ros)/config/tags.yaml" ns="$(arg node_namespace)" />
+  
+    <rosparam command="load" file="$(find apriltag_localization)/config/$(arg tag_location_file)" ns="apriltag_localization" />
+    
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="$(arg node_namespace)" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)" >
+      <!-- Remap topics from those used in code to those on the ROS network -->
+      <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)" />
+      <remap from="camera_info" to="$(arg camera_name)/camera_info" />
+  
+      <param name="publish_tag_detections_image" type="bool" value="true" />      <!-- default: false -->
+    </node>
+  
+    <node pkg="apriltag_localization" name="tag_localization_node" type="combine_map_and_detections.py" output="screen">
+      <param name="localization_method" type="string" value="$(arg localization_method)" />
+      <param name="buffer_size" type="int" value="$(arg buffer_size)" />
+      <param name="max_time_diff" type="double" value="$(arg max_time_diff)" />
+      <param name="max_error" type="double" value="$(arg max_error)" />
+    </node>
+
+    <node pkg="apriltag_localization" name="tag_localization_test" type="simple_test.py" output="screen">
+      <param name="test_file_name" type="string" value="$(arg test_file_name)" />
+      <param name="test_file_location" type="string" value="$(arg test_file_location)" />
+      <param name="test_file_format" type="string" value="$(arg test_file_format)" />
+    </node>
+  </launch>
