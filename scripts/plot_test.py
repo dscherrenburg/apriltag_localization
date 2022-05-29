@@ -82,10 +82,10 @@ def create_plots(test_location, test_name, test_format):
     plt.savefig(test_location + "/error_distance.png")
 
 if __name__ == '__main__':
-    save_name = rospy.get_param("~test_file_name")
-    save_location = rospy.get_param("~test_file_location")
-    save_format = rospy.get_param("~test_file_format")
-    # save_location = "/home/levijn/BEP/simulation_ws/"
-    # save_name = "simple_test"
-    # save_format = ".csv"
-    create_plots(save_location, save_name, save_format)
+    # save_name = rospy.get_param("~test_file_name")
+    # save_location = rospy.get_param("~test_file_location")
+    # save_format = rospy.get_param("~test_file_format")
+    save_location = "/home/daan/localization_ws/src/apriltag_localization/tests/"
+    save_name = "test_buffer30_error01"
+    save_format = ".csv"
+    create_plots(save_location+save_name, save_name, save_format)
