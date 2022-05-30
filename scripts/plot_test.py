@@ -61,6 +61,7 @@ def create_plots(test_location, test_name, test_format):
 
     ax.add_patch(real_patch)
     ax.add_patch(estimated_patch)
+<<<<<<< Updated upstream
     plt.savefig(test_location  + "/paths.png")
 
     plt.figure()
@@ -90,5 +91,32 @@ if __name__ == '__main__':
 #     save_location = "/home/daan/localization_ws/src/apriltag_localization/tests/"
     save_name = "test_buffer30_error01"
 
+=======
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.savefig(test_location  + "/paths.png")
+
+    # plt.figure()
+    # plt.plot(time, error_x)
+    # plt.xlabel('Time')
+    # plt.ylabel('error in x')
+    # plt.savefig(test_location + "/error_x.png")
+
+    # plt.figure()
+    # plt.plot(time, error_y)
+    # plt.xlabel('Time')
+    # plt.ylabel('error in y')
+    # plt.savefig(test_location + "/error_y.png")
+
+    # plt.figure()
+    # plt.plot(time, error)
+    # plt.xlabel('Time')
+    # plt.ylabel('error in distance')
+    # plt.savefig(test_location + "/error_distance.png")
+
+if __name__ == '__main__':
+    save_location = "/home/levijn/BEP/simulation_ws/move_forward_tests/"
+    save_name = "test13_buf5_er02_tdiff02"
+>>>>>>> Stashed changes
     save_format = ".csv"
     create_plots(save_location+save_name, save_name, save_format)

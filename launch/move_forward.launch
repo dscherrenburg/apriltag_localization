@@ -1,12 +1,41 @@
 <launch>
-    <arg name="speed" default="1"/>
-    <arg name="time" default="1"/>
+    <arg name="launch_prefix" default="" />
+    <arg name="node_namespace" default="apriltag_ros_continuous_node" />
+    <arg name="camera_name" default="/xtion/rgb" />
+    <arg name="image_topic" default="image_raw" />
+    <arg name="tag_location_file" default="tag_real_world.yaml"/>
+
+    <arg name="speed" default="-0.3043333"/>
+    <arg name="time" default="6"/>
     <arg name="direction" default="x"/>
 
+    <arg name="localization_method" default="weighted_average"/>
+    <arg name="buffer_size" default="5"/>
+    <arg name="max_time_diff" default="0.2"/>
+    <arg name="max_error" default="0.2"/>
+
     <arg name="save_location" default="/home/levijn/BEP/simulation_ws/move_forward_tests/"/>
-    <arg name="save_name" default="move_forward_test"/>
+    <arg name="save_name" default="test_buf15_er02_tdiff02"/>
     <arg name="save_format" default=".csv"/>
 
+
+    <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml" ns="$(arg node_namespace)" />
+    <rosparam command="load" file="$(find apriltag_ros)/config/tags.yaml" ns="$(arg node_namespace)" />
+    
+    <rosparam command="load" file="$(find apriltag_localization)/config/$(arg tag_location_file)" ns="apriltag_localization" />
+    
+    <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="$(arg node_namespace)" clear_params="true" output="screen" launch-prefix="$(arg launch_prefix)" >
+        <remap from="image_rect" to="$(arg camera_name)/$(arg image_topic)" />
+        <remap from="camera_info" to="$(arg camera_name)/camera_info" />
+        <param name="publish_tag_detections_image" type="bool" value="true" /> 
+    </node>
+
+    <node pkg="apriltag_localization" name="tag_localization_node" type="combine_map_and_detections.py" output="screen">
+        <param name="localization_method" type="string" value="$(arg localization_method)" />
+        <param name="buffer_size" type="int" value="$(arg buffer_size)" />
+        <param name="max_time_diff" type="double" value="$(arg max_time_diff)" />
+        <param name="max_error" type="double" value="$(arg max_error)" />
+    </node>
 
     <node pkg="apriltag_localization" name="move_forward" type="move_forward.py" output="screen">
         <param name="speed" type="double" value="$(arg speed)"/>    
