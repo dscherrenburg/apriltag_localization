@@ -29,6 +29,7 @@ def create_plots(test_location, test_name, test_format):
     
     with open(test_location + "/" + test_name + test_format, "r") as f:
         rospy.loginfo(test_location + "/" + test_name + test_format)
+
         reader = csv.reader(f)
         header = next(reader)
         first_values = next(reader)
@@ -83,9 +84,11 @@ def create_plots(test_location, test_name, test_format):
 
 if __name__ == '__main__':
     # save_name = rospy.get_param("~test_file_name")
-    # save_location = rospy.get_param("~test_file_location")
+    save_location = rospy.get_param("~test_file_location")
     # save_format = rospy.get_param("~test_file_format")
-    save_location = "/home/daan/localization_ws/src/apriltag_localization/tests/"
+    
+#     save_location = "/home/daan/localization_ws/src/apriltag_localization/tests/"
     save_name = "test_buffer30_error01"
+
     save_format = ".csv"
     create_plots(save_location+save_name, save_name, save_format)

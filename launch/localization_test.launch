@@ -3,7 +3,7 @@
     <arg name="node_namespace" default="apriltag_ros_continuous_node" />
     <arg name="camera_name" default="/xtion/rgb" />
     <arg name="image_topic" default="image_raw" />
-    <arg name="tag_location_file" default="tag_world.yaml"/>
+    <arg name="tag_location_file" default="tag_real_world.yaml"/>
 
     <arg name="localization_method" default="weighted_average"/>
     <arg name="buffer_size" default="10"/>

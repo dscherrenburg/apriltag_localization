@@ -172,16 +172,21 @@ class VisualLocalization:
         self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
         rospy.loginfo("Opened tag location yaml file")
         
-        self.tags = {'tag_0': Tag(0, self.world_loc_tags['tag_0'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size), 
-                     'tag_1': Tag(1, self.world_loc_tags['tag_1'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_2': Tag(2, self.world_loc_tags['tag_2'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+        self.tags = {'tag_1': Tag(1, self.world_loc_tags['tag_1'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_3': Tag(3, self.world_loc_tags['tag_3'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_4': Tag(4, self.world_loc_tags['tag_4'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_5': Tag(5, self.world_loc_tags['tag_5'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_6': Tag(6, self.world_loc_tags['tag_6'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_7': Tag(7, self.world_loc_tags['tag_7'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_8': Tag(8, self.world_loc_tags['tag_8'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_9': Tag(9, self.world_loc_tags['tag_9'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size)
+                     'tag_9': Tag(9, self.world_loc_tags['tag_9'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_10': Tag(10, self.world_loc_tags['tag_10'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size), 
+                     'tag_11': Tag(11, self.world_loc_tags['tag_11'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_12': Tag(12, self.world_loc_tags['tag_12'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_13': Tag(13, self.world_loc_tags['tag_13'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_15': Tag(15, self.world_loc_tags['tag_15'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_16': Tag(16, self.world_loc_tags['tag_16'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_17': Tag(17, self.world_loc_tags['tag_17'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_18': Tag(18, self.world_loc_tags['tag_18'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size)
                      }
         rospy.loginfo("Created tag objects")
         

@@ -1,0 +1,19 @@
+<launch>
+    <arg name="speed" default="1"/>
+    <arg name="time" default="1"/>
+    <arg name="direction" default="x"/>
+
+    <arg name="save_location" default="/home/levijn/BEP/simulation_ws/move_forward_tests/"/>
+    <arg name="save_name" default="move_forward_test"/>
+    <arg name="save_format" default=".csv"/>
+
+
+    <node pkg="apriltag_localization" name="move_forward" type="move_forward.py" output="screen">
+        <param name="speed" type="double" value="$(arg speed)"/>    
+        <param name="time" type="double" value="$(arg time)"/>
+        <param name="direction" type="string" value="$(arg direction)"/>
+        <param name="save_location" type="string" value="$(arg save_location)"/>
+        <param name="save_name" type="string" value="$(arg save_name)"/>
+        <param name="save_format" type="string" value="$(arg save_format)"/>
+    </node>
+</launch>

@@ -1,11 +1,20 @@
 
 <launch>
-  <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
-  <arg name="node_namespace" default="apriltag_ros_continuous_node" />
-  <arg name="camera_name" default="/xtion/rgb" />
-  <arg name="image_topic" default="image_raw" />
-  <arg name="tag_location_file" default="tag_world.yaml"/>
-  <arg name="localization_method" default="weighted_avg"/>
+    <arg name="launch_prefix" default="" /> <!-- set to value="gdbserver localhost:10000" for remote debugging -->
+    <arg name="node_namespace" default="apriltag_ros_continuous_node" />
+    <arg name="camera_name" default="/xtion/rgb" />
+    <arg name="image_topic" default="image_raw" />
+    <arg name="tag_location_file" default="tag_real_world.yaml"/>
+
+    <arg name="localization_method" default="weighted_average"/>
+    <arg name="buffer_size" default="10"/>
+    <arg name="max_time_diff" default="0.2"/>
+    <arg name="max_error" default="0.1"/>
+
+    <arg name="test_file_location" default="/home/levijn/BEP/simulation_ws/"/>
+    <arg name="test_file_name" default="simple_test"/>
+    <arg name="test_file_format" default=".csv"/>
+  
 
   <!-- Set parameters -->
   <rosparam command="load" file="$(find apriltag_ros)/config/settings.yaml" ns="$(arg node_namespace)" />
@@ -21,5 +30,10 @@
     <param name="publish_tag_detections_image" type="bool" value="true" />      <!-- default: false -->
   </node>
 
-  <node pkg="apriltag_localization" name="tag_localization_node" type="combine_map_and_detections.py" output="screen"></node>
+  <node pkg="apriltag_localization" name="tag_localization_node" type="combine_map_and_detections.py" output="screen">
+    <param name="localization_method" type="string" value="$(arg localization_method)" />
+    <param name="buffer_size" type="int" value="$(arg buffer_size)" />
+    <param name="max_time_diff" type="double" value="$(arg max_time_diff)" />
+    <param name="max_error" type="double" value="$(arg max_error)" />
+  </node>
 </launch>
