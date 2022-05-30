@@ -111,7 +111,8 @@ if __name__ == '__main__':
     # save_location = rospy.get_param("~test_file_location")
     # save_format = rospy.get_param("~test_file_format")
     
-    test_location = "/home/daan/localization_ws/src/apriltag_localization/tests"
+#     test_location = "/home/daan/localization_ws/src/apriltag_localization/tests"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/tests"
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
     # save_name = "test_buffer30_error01"
@@ -124,3 +125,4 @@ if __name__ == '__main__':
 
     # create_plots(data_location, plots_location, save_name, data_format)
     all_plots(data_location, plots_location)
+

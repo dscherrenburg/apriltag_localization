@@ -3,19 +3,15 @@
     <arg name="node_namespace" default="apriltag_ros_continuous_node" />
     <arg name="camera_name" default="/xtion/rgb" />
     <arg name="image_topic" default="image_raw" />
-    <arg name="tag_location_file" default="tag_real_world.yaml"/>
-
-    <arg name="speed" default="-0.3043333"/>
-    <arg name="time" default="6"/>
-    <arg name="direction" default="x"/>
+    <arg name="tag_location_file" default="tag_world.yaml"/>
 
     <arg name="localization_method" default="weighted_average"/>
     <arg name="buffer_size" default="5"/>
     <arg name="max_time_diff" default="0.2"/>
     <arg name="max_error" default="0.2"/>
 
-    <arg name="save_location" default="$(find apriltag_localization)/tests/data"/>
-    <arg name="save_name" default="move_forward_test"/>
+    <arg name="save_location" default="/home/levijn/BEP/simulation_ws/move_square_tests/"/>
+    <arg name="save_name" default="test_buf15_er02_tdiff02"/>
     <arg name="save_format" default=".csv"/>
 
 
@@ -30,17 +26,14 @@
         <param name="publish_tag_detections_image" type="bool" value="true" /> 
     </node>
 
-    <node pkg="apriltag_localization" name="tag_localization_node" type="combine_map_and_detections.py" output="screen">
+    <node pkg="apriltag_localization" name="tag_localization_node" type="simulation_detection_node.py" output="screen">
         <param name="localization_method" type="string" value="$(arg localization_method)" />
         <param name="buffer_size" type="int" value="$(arg buffer_size)" />
         <param name="max_time_diff" type="double" value="$(arg max_time_diff)" />
         <param name="max_error" type="double" value="$(arg max_error)" />
     </node>
 
-    <node pkg="apriltag_localization" name="move_forward" type="move_forward.py" output="screen">
-        <param name="speed" type="double" value="$(arg speed)"/>    
-        <param name="time" type="double" value="$(arg time)"/>
-        <param name="direction" type="string" value="$(arg direction)"/>
+    <node pkg="apriltag_localization" name="simulation_move_square" type="simulation_square_test.py" output="screen">
         <param name="save_location" type="string" value="$(arg save_location)"/>
         <param name="save_name" type="string" value="$(arg save_name)"/>
         <param name="save_format" type="string" value="$(arg save_format)"/>
