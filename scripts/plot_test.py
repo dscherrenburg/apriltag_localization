@@ -14,19 +14,19 @@ def create_plots(test_location, test_name, test_format):
     ax.axis([-2, 0, -1.5, 1.5])
     real_path_data, estimated_path_data, error, error_x, error_y, time = [], [], [], [], [], []
 
-    directory = "plots__" + test_name
-    test_path = os.path.join(test_location, "tests")
-    directory_path = os.path.join(test_path, directory)
-    try: 
-        os.mkdir(test_path)
-        os.mkdir(directory_path)
-    except OSError as fail: 
-        try:
-            os.mkdir(directory_path)
-        except OSError as fail2:
-            pass
+    # directory = "plots__" + test_name
+    # test_path = os.path.join(test_location, "tests")
+    # directory_path = os.path.join(test_path, directory)
+    # try: 
+    #     os.mkdir(test_path)
+    #     os.mkdir(directory_path)
+    # except OSError as fail: 
+    #     try:
+    #         os.mkdir(directory_path)
+    #     except OSError as fail2:
+    #         pass
     
-    with open(test_location + test_name + test_format, "r") as f:
+    with open(test_location + "/" + test_name + test_format, "r") as f:
         reader = csv.reader(f)
         header = next(reader)
         first_values = next(reader)
@@ -78,7 +78,7 @@ def create_plots(test_location, test_name, test_format):
     plt.savefig(directory_path + "/error_distance.png")
 
 if __name__ == '__main__':
-    save_location = "/home/levijn/BEP/simulation_ws/"
-    save_name = "test_buffer10_error03"
+    save_location = "/home/levijn/BEP/simulation_ws/move_forward_tests/"
+    save_name = "test_1"
     save_format = ".csv"
-    create_plots(save_location, save_name, save_format)
+    create_plots(save_location+save_name, save_name, save_format)
