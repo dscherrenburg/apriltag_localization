@@ -114,10 +114,8 @@ if __name__ == '__main__':
         except OSError as fail2:
             pass
         
-    moves = [Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(4, 0.25)]
+    moves = [Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(8, 0.25), Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(4, 0.25)]
     
     move_square_test = MoveInSquare(test_folder_location + "/" + save_name + save_format, moves=moves)
     
     move_square_test.move()
-        
-        
