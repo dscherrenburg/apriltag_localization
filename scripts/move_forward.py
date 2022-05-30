@@ -50,8 +50,6 @@ class MoveForward:
                 if rospy.get_rostime().to_sec() - start_time > self.time:
                     self.movement_completed = True
                 
-                
-                
                 self.publishrate.sleep()
             
             twist = Twist()
@@ -73,26 +71,20 @@ class MoveForward:
 if __name__ == '__main__':
     rospy.init_node('move_forward')
     
-    speed = rospy.get_param("~speed", 0.5)
-    time = rospy.get_param("~time", 1)
-    direction = rospy.get_param("~direction", "x")
+    speed = rospy.get_param("~speed")
+    time = rospy.get_param("~time")
+    direction = rospy.get_param("~direction")
     
-    save_location = rospy.get_param("~save_location", "/home/levijn/BEP/simulation_ws/move_forward_tests")
-    save_name = rospy.get_param("~save_name", "move_forward_test")
-    save_format = rospy.get_param("~save_format", ".csv")
-
-    test_folder_location = os.path.join(save_location, save_name)
+    save_location = rospy.get_param("~save_location")
+    save_name = rospy.get_param("~save_name")
+    save_format = rospy.get_param("~save_format")
 
     try: 
-        os.mkdir(save_location)
-        os.mkdir(test_folder_location)
+        os.makedirs(save_location)
     except OSError as fail: 
-        try:
-            os.mkdir(test_folder_location)
-        except OSError as fail2:
-            pass
+        pass
     
-    move_forward = MoveForward(speed, time, direction, test_folder_location + "/" + save_name + save_format)
+    move_forward = MoveForward(speed, time, direction, save_location + "/" + save_name + save_format)
     
     move_forward.move()
         
