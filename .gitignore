@@ -2,3 +2,5 @@
 CMakeLists.txt
 package.xml
 *.pyc
+tests/
+

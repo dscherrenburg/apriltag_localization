@@ -9,6 +9,7 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf.transformations import quaternion_from_euler
 from plot_test import create_plots
+import os
 
 
 def movebase_client(x, y, r):
@@ -35,7 +36,6 @@ def movebase_client(x, y, r):
         rospy.signal_shutdown("Action server not available!")
     else:
         return client.get_result()
-
 
 
 class SimpleTest:
@@ -135,8 +135,19 @@ if __name__ == '__main__':
     save_location = rospy.get_param("~test_file_location")
     save_format = rospy.get_param("~test_file_format")
     rospy.loginfo(save_location)
+
+    test_folder_location = os.path.join(save_location, save_name)
+
+    try: 
+        os.mkdir(save_location)
+        os.mkdir(test_folder_location)
+    except OSError as fail: 
+        try:
+            os.mkdir(test_folder_location)
+        except OSError as fail2:
+            pass
     
-    test = SimpleTest("tiago_dual", 20, move_sequence, save_location+save_name+save_format)
+    test = SimpleTest("tiago_dual", 20, move_sequence, test_folder_location+"/"+save_name+save_format)
     test.run_test()
 
-    create_plots(save_location, save_name, save_format)
+    create_plots(test_folder_location, save_name, save_format)

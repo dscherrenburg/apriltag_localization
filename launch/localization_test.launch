@@ -10,8 +10,8 @@
     <arg name="max_time_diff" default="0.2"/>
     <arg name="max_error" default="0.1"/>
 
-    <arg name="test_file_location" default="/home/levijn/BEP/simulation_ws/"/>
     <arg name="test_file_name" default="simple_test"/>
+    <arg name="test_file_location" default="$(find apriltag_localization)/tests/"/>
     <arg name="test_file_format" default=".csv"/>
   
     <!-- Set parameters -->
