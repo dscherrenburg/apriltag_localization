@@ -66,6 +66,8 @@ class MoveInSquare:
                     row = [rospy.get_time(), self.true_location[0], self.true_location[1], self.estimated_location_tag[0], self.estimated_location_tag[1], self.estimated_location_amcl[0], self.estimated_location_amcl[1]]
                     writer.writerow(row)
                     
+                    rospy.loginfo("logged: %s", row)
+                    
                     self.publisher_vel.publish(move.move())
                     
                     self.publish_rate.sleep()
@@ -97,25 +99,19 @@ class MoveInSquare:
 if __name__ == '__main__':
     rospy.init_node('move_square_test')
     
-    save_location = rospy.get_param("~save_location", "/home/levijn/BEP/simulation_ws/move_forward_tests")
-    save_name = rospy.get_param("~save_name", "move_forward_test")
-    save_format = rospy.get_param("~save_format", ".csv")
-
-    test_folder_location = os.path.join(save_location, save_name)
+    save_location = rospy.get_param("~save_location")
+    save_name = rospy.get_param("~save_name")
+    save_format = rospy.get_param("~save_format")
     
-    rospy.sleep(3)
+    rospy.loginfo(save_location + "/" + save_name + save_format)
 
     try: 
-        os.mkdir(save_location)
-        os.mkdir(test_folder_location)
+        os.makedirs(save_location)
     except OSError as fail: 
-        try:
-            os.mkdir(test_folder_location)
-        except OSError as fail2:
-            pass
+        pass
         
     moves = [Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(8, 0.25), Rotate(4, np.pi/8), Move(4, 0.25), Rotate(4, np.pi/8), Move(4, 0.25)]
     
-    move_square_test = MoveInSquare(test_folder_location + "/" + save_name + save_format, moves=moves)
+    move_square_test = MoveInSquare(save_location + "/" + save_name + save_format, moves=moves)
     
     move_square_test.move()

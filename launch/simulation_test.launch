@@ -6,12 +6,12 @@
     <arg name="tag_location_file" default="tag_world.yaml"/>
 
     <arg name="localization_method" default="weighted_average"/>
-    <arg name="buffer_size" default="5"/>
+    <arg name="buffer_size" default="10"/>
     <arg name="max_time_diff" default="0.2"/>
     <arg name="max_error" default="0.2"/>
 
-    <arg name="save_location" default="/home/levijn/BEP/simulation_ws/move_square_tests/"/>
-    <arg name="save_name" default="test_buf15_er02_tdiff02"/>
+    <arg name="save_location" default="$(find apriltag_localization)/tests/data"/>
+    <arg name="save_name" default="test3_buf10_er02_tdiff02"/>
     <arg name="save_format" default=".csv"/>
 
 
