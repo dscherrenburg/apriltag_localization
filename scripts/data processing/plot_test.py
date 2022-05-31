@@ -59,9 +59,9 @@ def create_plots(data_location, plots_location, test_name, test_format):
         os.makedirs(save_location)
     except OSError: 
         pass
-    ax.add_patch(real_patch, label="real path")
-    ax.add_patch(tag_patch, label="tag estimation path")
-    ax.add_patch(amcl_patch, label="amcl estimation path")
+    ax.add_patch(real_patch)
+    ax.add_patch(tag_patch)
+    ax.add_patch(amcl_patch)
     plt.legend()
     plt.title("Path estimation")
     plt.xlabel("x")
