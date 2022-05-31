@@ -163,3 +163,38 @@ def weightedAverageQuaternions(Q, w):
 
     # return the real part of the largest eigenvector (has only real part)
     return np.real(eigenVectors[:,0].A1)
+
+def median_outlier_filter(points, max_error=0.1):
+    """Deletes the outliers from the list of points.
+    -   points: list of points (each point is a list of translations)
+    -   max_error: the maximum distance from the median"""
+    
+    n_params = len(points[0]) 
+    lsts, medians, filtered_lsts = [], [], []
+    for i in range(n_params):
+        lsts.append([])
+        filtered_lsts.append([])
+
+    # Looping through points and adding x, y, z to separate lists
+    for point in points:
+        for i in range(n_params):
+            lsts[i].append(point[i])
+    
+    # Looping through parameter lists, sorting them to determine the median
+    for lst in lsts:
+        lst.sort()
+        medians.append(lst[int(len(lst)/2)])
+
+    # Looping through points to check if the error from the median is too big. If so it deletes the entire point.
+    for point in points:
+        if all([(abs(point[i] - medians[i]) < max_error) for i in range(n_params)]):
+            for i in range(n_params):
+                filtered_lsts[i].append(point[i])
+        else:
+            continue
+    
+    # If there where no valid points it returns just the points without filtering
+    if len(filtered_lsts[0]) == 0:
+        filtered_lsts = lsts
+    
+    return filtered_lsts
