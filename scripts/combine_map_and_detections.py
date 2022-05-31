@@ -293,16 +293,17 @@ class VisualLocalization:
         return avg_tf_matrix
     
     
-    def get_tf_robot_to_tag(self, tag, robot_frame):
+    def get_tf_robot_to_tag(self, tag, robot_frame, max_time_diff=0.2):
         """
         Returns the transform from the robot_frame to the tag_frame
         -    tag:         Tag object
         -    robot_frame: the frame in which you want to calculate the transform to the tag
         """
+        
         try:
-            t = self.transform_listener.getLatestCommonTime(robot_frame, tag)
+            t_latest = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
-            if t_now.to_sec() - t.to_sec() < 0.3:
+            if t_now.to_sec() - t_latest.to_sec() < 0.3:
                 self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
                 tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
                 return tf_robot_to_tag
