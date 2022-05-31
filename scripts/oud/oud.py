@@ -23,6 +23,56 @@
 
             avgs[tag_id] = avg_pose
         return avgs
+    
+    @staticmethod
+    def median_outlier_filter(points, max_error=0.1):
+        """Deletes the outliers from the list of points.
+        -   points: list of points (each point is a list of translations)
+        -   max_error: the maximum distance from the median"""
+        
+        n_params = len(points[0]) 
+        lsts, filtered_lsts, medians = [], [], []
+
+        # Looping through points and adding x, y, z to separate lists
+        for point in points:
+            for i in range(n_params):
+                if i >= len(lsts):
+                    lsts.append([point[i]])
+                else:
+                    lsts[i].append(point[i])
+        
+        # Looping through parameter lists, sorting them to determine the median
+        for lst in lsts:
+            lst.sort()
+            medians.append(lst[int(len(lst)/2)])
+
+        # Looping through points to check if the error from the median is too big. If so it deletes the entire point.
+        for point in points:
+            for i in range(n_params):
+                if i == len(filtered_lsts):
+                        filtered_lsts.append([])
+                
+                if abs(medians[i] - point[i]) < max_error:
+                    filtered_lsts[i].append(point[i])
+                else:
+                    rospy.loginfo("Error larger than allowed sow deleting the point.")
+                    break
+            
+            for i in range(len(filtered_lsts)):
+                if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
+                    del filtered_lsts[i][-1]
+        
+        # To make sure that the number of lists is always the same
+        while len(filtered_lsts) < n_params:
+            filtered_lsts.append([])
+        
+        # If there where no valid points it returns just the points without filtering
+        if len(filtered_lsts[0]) == 0:
+            filtered_lsts = lsts
+        
+        # rospy.loginfo("Filtered lists:   " + str(filtered_lsts))
+
+        return filtered_lsts
 
     def calculate_robot_pose_per_tag(self, tf_tag_world, tf_tag_robot):
         """Calculates the robot pose relative to the world."""

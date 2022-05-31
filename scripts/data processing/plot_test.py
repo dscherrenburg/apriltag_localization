@@ -10,7 +10,7 @@ def create_plots(data_location, plots_location, test_name, test_format):
     w = 4
     h = 3
     d = 70
-    plt.figure(figsize=(w, h), dpi=d)
+    plt.figure()
     fig, ax = plt.subplots()
     ax.axis([-1.5, 1.5, -1.75, 1.75])
     # [time, truex, truey, tagx, tagy, amclx, amcly]
@@ -111,6 +111,42 @@ def create_plots(data_location, plots_location, test_name, test_format):
     plt.title("Error in global distance of tag estimation")
     plt.savefig(save_location  + "/" + test_name + ".png")
 
+def create_data_table(data_location, table_location, data_name, table_name="data_table", data_format=".csv", table_format=".csv"):
+
+    with open(table_location + "/" + table_name + table_format, 'w') as table:
+        writer = csv.writer(table)
+
+        f = open(table_location + "/" + table_name + table_format, 'r')
+        table_reader = csv.reader(f)
+        line_count = len(list(table_reader))
+        if line_count == 0:
+            header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error"]
+            writer.writerow(header)
+        
+        "test3_buf10_er020_tdiff02"
+        buffer_size = int(data_name[9:11])
+        max_error = float(data_name[14:17])/100
+        time_difference = float(data_name[-2:])/10
+
+        tag_error, tag_error_x, tag_error_y, time = [], [], [], []
+
+        with open(data_location + "/" + data_name + data_format, "r") as data:
+            data_reader = csv.reader(data)
+            for row in data_reader:
+                tag_x_error = abs(float(row[1])-float(row[3]))
+                tag_y_error = abs(float(row[2])-float(row[4]))
+                tag_dist_error = np.sqrt(tag_x_error**2 + tag_y_error**2)
+                tag_error_x.append(tag_x_error)
+                tag_error_y.append(tag_y_error)
+                tag_error.append(tag_dist_error)
+                time.append(row[0])
+            avg_error = sum(tag_error) / len(tag_error)
+        
+        data = [buffer_size, max_error, time_difference, avg_error]
+        writer.writerow(data)
+
+
+
 def all_plots(data_location, plots_location, data_name=None, data_format=".csv", plotformat=".png"):
     if data_name is None:
         data_files = os.listdir(data_location)
@@ -118,7 +154,8 @@ def all_plots(data_location, plots_location, data_name=None, data_format=".csv",
             file_name = os.path.splitext(file)[0]
             file_format = os.path.splitext(file)[1]
 
-            create_plots(data_location, plots_location, file_name, file_format)
+            create_data_table(data_location, plots_location, file_name, data_format=file_format)
+            # create_plots(data_location, plots_location, file_name, file_format)
     else:
         create_plots(data_location, plots_location, data_name, data_format)
 
@@ -133,7 +170,7 @@ if __name__ == '__main__':
     # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/tests"
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
-    save_name = "test3_buf10_er02_tdiff02"
+    # save_name = "test3_buf10_er02_tdiff02"
     # data_format = ".csv"
 
     try: 
@@ -142,5 +179,5 @@ if __name__ == '__main__':
         pass
 
     # create_plots(data_location, plots_location, save_name, data_format)
-    all_plots(data_location, plots_location, save_name)
+    all_plots(data_location, plots_location)
 
