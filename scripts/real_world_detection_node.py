@@ -8,7 +8,7 @@ import utility
 
 
 from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
-from quaternion_avg import averageQuaternions
+from utility import averageQuaternions
 from gazebo_msgs.msg import ModelStates
 
 class Tag:

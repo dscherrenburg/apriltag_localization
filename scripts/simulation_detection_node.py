@@ -2,13 +2,13 @@
 import rospy
 import tf
 import rosparam
-import tf.transformations as tft
+import tf.transformations as tft 
 import numpy as np
 import utility
 
 
 from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
-from quaternion_avg import averageQuaternions
+from utility import averageQuaternions
 from gazebo_msgs.msg import ModelStates
 
 class Tag:
@@ -302,13 +302,10 @@ class VisualLocalization:
         try:
             t = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
-            if t_now.to_sec() - t.to_sec() < 0.3:
-                self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
-                tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
-                return tf_robot_to_tag
-            else:
-                return None
-        except tf.LookupException or tf.Exception:
+            self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
+            tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
+            return tf_robot_to_tag
+        except:
             return None
     
     
