@@ -8,7 +8,7 @@ import utility
 
 
 from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
-from utility import averageQuaternions
+from quaternion_avg import averageQuaternions
 from gazebo_msgs.msg import ModelStates
 
 class Tag:
@@ -56,15 +56,16 @@ class Tag:
         -   max_error: the maximum distance from the median"""
         
         n_params = len(points[0]) 
-        lsts, filtered_lsts, medians = [], [], []
+        lsts, medians, filtered_lsts = [], [], []
+        for i in range(n_params):
+            lsts.append([])
+            medians.append([])
+            filtered_lsts.append([])
 
         # Looping through points and adding x, y, z to separate lists
         for point in points:
             for i in range(n_params):
-                if i >= len(lsts):
-                    lsts.append([point[i]])
-                else:
-                    lsts[i].append(point[i])
+                lsts[i].append(point[i])
         
         # Looping through parameter lists, sorting them to determine the median
         for lst in lsts:
@@ -73,23 +74,28 @@ class Tag:
 
         # Looping through points to check if the error from the median is too big. If so it deletes the entire point.
         for point in points:
-            for i in range(n_params):
-                if i == len(filtered_lsts):
-                        filtered_lsts.append([])
-                
-                if abs(medians[i] - point[i]) < max_error:
+            if all(abs(point[i] - medians[i]) < max_error for i in range(n_params)):
+                for i in range(n_params):
                     filtered_lsts[i].append(point[i])
-                else:
-                    rospy.loginfo("Error larger than allowed sow deleting the point.")
-                    break
+            else:
+                continue
+
+        #         if i == len(filtered_lsts):
+        #                 filtered_lsts.append([])
+                
+        #         if abs(medians[i] - point[i]) < max_error:
+        #             filtered_lsts[i].append(point[i])
+        #         else:
+        #             rospy.loginfo("Error larger than allowed sow deleting the point.")
+        #             break
             
-            for i in range(len(filtered_lsts)):
-                if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
-                    del filtered_lsts[i][-1]
+        #     for i in range(len(filtered_lsts)):
+        #         if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
+        #             del filtered_lsts[i][-1]
         
-        # To make sure that the number of lists is always the same
-        while len(filtered_lsts) < n_params:
-            filtered_lsts.append([])
+        # # To make sure that the number of lists is always the same
+        # while len(filtered_lsts) < n_params:
+        #     filtered_lsts.append([])
         
         # If there where no valid points it returns just the points without filtering
         if len(filtered_lsts[0]) == 0:
@@ -173,14 +179,17 @@ class VisualLocalization:
         self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
         rospy.loginfo("Opened tag location yaml file")
         
-        # self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
-        # self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
-        # rospy.loginfo(self.apriltag_poses)
+        self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
+        self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
+        rospy.loginfo(self.apriltag_poses)
         
-        self.tags = {'tag_1': Tag(1, self.world_loc_tags['tag_1'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+        self.tags = {'tag_0': Tag(0, self.world_loc_tags['tag_0'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_1': Tag(1, self.world_loc_tags['tag_1'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_2': Tag(2, self.world_loc_tags['tag_2'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_3': Tag(3, self.world_loc_tags['tag_3'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_4': Tag(4, self.world_loc_tags['tag_4'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_5': Tag(5, self.world_loc_tags['tag_5'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_6': Tag(6, self.world_loc_tags['tag_6'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_7': Tag(7, self.world_loc_tags['tag_7'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_8': Tag(8, self.world_loc_tags['tag_8'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_9': Tag(9, self.world_loc_tags['tag_9'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
@@ -188,10 +197,8 @@ class VisualLocalization:
                      'tag_11': Tag(11, self.world_loc_tags['tag_11'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_12': Tag(12, self.world_loc_tags['tag_12'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_13': Tag(13, self.world_loc_tags['tag_13'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_15': Tag(15, self.world_loc_tags['tag_15'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_16': Tag(16, self.world_loc_tags['tag_16'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_17': Tag(17, self.world_loc_tags['tag_17'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_18': Tag(18, self.world_loc_tags['tag_18'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size)
+                     'tag_14': Tag(14, self.world_loc_tags['tag_14'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
+                     'tag_15': Tag(15, self.world_loc_tags['tag_15'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size)
                      }
         rospy.loginfo("Created tag objects")
         
@@ -298,11 +305,10 @@ class VisualLocalization:
         -    tag:         Tag object
         -    robot_frame: the frame in which you want to calculate the transform to the tag
         """
-        
         try:
             t_latest = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
-            if t_now.to_sec() - t.to_sec() < self.max_time_diff:
+            if t_now.to_sec() - t_latest.to_sec() < 0.3:
                 self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
                 tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
                 return tf_robot_to_tag
@@ -337,16 +343,12 @@ if __name__ == '__main__':
     rospy.init_node('tag_localization')
     rospy.loginfo("Start up node")
     
+    
+    
     localization_method = rospy.get_param("~localization_method")
     buffer_size = rospy.get_param("~buffer_size")
     max_time_diff = rospy.get_param("~max_time_diff")
     max_error = rospy.get_param("~max_error")
-    
-    rospy.loginfo("\nStarted localization with parameters: \n" + \
-                  "Localization method: " + localization_method + "\n" + \
-                  "Buffer size: " + str(buffer_size) + "\n" + \
-                  "Max time diff: " + str(max_time_diff) + "\n" + \
-                  "Max error: " + str(max_error))
     
     
     tag_localization = VisualLocalization(tag_combination_mode=localization_method, 
@@ -354,6 +356,7 @@ if __name__ == '__main__':
                                           max_time_diff=max_time_diff,
                                           max_error=max_error)
     
+    rospy.loginfo("\n Running the combine_map_and_detections program ...")
     rate = rospy.Rate(60)
     while not rospy.is_shutdown():
         tag_localization.run_localization()

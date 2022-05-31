@@ -12,7 +12,7 @@ def create_plots(data_location, plots_location, test_name, test_format):
     d = 70
     plt.figure(figsize=(w, h), dpi=d)
     fig, ax = plt.subplots()
-    ax.axis([-1.5, 1, -1.75, 1.75])
+    ax.axis([-1.5, 1.5, -1.75, 1.75])
     # [time, truex, truey, tagx, tagy, amclx, amcly]
     real_path_data, tag_path_data, amcl_path_data, tag_error, tag_error_x, tag_error_y, time = [], [], [], [], [], [], []
     
@@ -42,15 +42,15 @@ def create_plots(data_location, plots_location, test_name, test_format):
 
     real_codes, real_verts = zip(*real_path_data)
     real_path = mpath.Path(real_verts, real_codes)
-    real_patch = mpatches.PathPatch(real_path, edgecolor="red", facecolor="none", lw=2)
+    real_patch = mpatches.PathPatch(real_path, edgecolor="red", facecolor="none", lw=2, label="real path")
 
     tag_codes, tag_verts = zip(*tag_path_data)
     tag_path = mpath.Path(tag_verts, tag_codes)
-    tag_patch = mpatches.PathPatch(tag_path, edgecolor="green", facecolor="none", lw=2)
+    tag_patch = mpatches.PathPatch(tag_path, edgecolor="green", facecolor="none", lw=2, label="tag estimation path")
 
     amcl_codes, amcl_verts = zip(*amcl_path_data)
     amcl_path = mpath.Path(amcl_verts, amcl_codes)
-    amcl_patch = mpatches.PathPatch(amcl_path, edgecolor="yellow", facecolor="none", lw=2)
+    amcl_patch = mpatches.PathPatch(amcl_path, edgecolor="yellow", facecolor="none", lw=2, label="amcl estimation path")
 
     # Paths
     dir_name = "paths"
@@ -111,13 +111,16 @@ def create_plots(data_location, plots_location, test_name, test_format):
     plt.title("Error in global distance of tag estimation")
     plt.savefig(save_location  + "/" + test_name + ".png")
 
-def all_plots(data_location, plots_location, plotformat=".png"):
-    data_files = os.listdir(data_location)
-    for file in data_files:
-        file_name = os.path.splitext(file)[0]
-        file_format = os.path.splitext(file)[1]
+def all_plots(data_location, plots_location, data_name=None, data_format=".csv", plotformat=".png"):
+    if data_name is None:
+        data_files = os.listdir(data_location)
+        for file in data_files:
+            file_name = os.path.splitext(file)[0]
+            file_format = os.path.splitext(file)[1]
 
-        create_plots(data_location, plots_location, file_name, file_format)
+            create_plots(data_location, plots_location, file_name, file_format)
+    else:
+        create_plots(data_location, plots_location, data_name, data_format)
 
 
 
@@ -126,11 +129,11 @@ if __name__ == '__main__':
     # save_location = rospy.get_param("~test_file_location")
     # save_format = rospy.get_param("~test_file_format")
     
-#     test_location = "/home/daan/localization_ws/src/apriltag_localization/tests"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/tests"
+    test_location = "/home/daan/localization_ws/src/apriltag_localization/tests"
+    # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/tests"
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
-    # save_name = "test_buffer30_error01"
+    save_name = "test3_buf10_er02_tdiff02"
     # data_format = ".csv"
 
     try: 
@@ -139,5 +142,5 @@ if __name__ == '__main__':
         pass
 
     # create_plots(data_location, plots_location, save_name, data_format)
-    all_plots(data_location, plots_location)
+    all_plots(data_location, plots_location, save_name)
 
