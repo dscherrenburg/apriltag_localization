@@ -8,7 +8,7 @@ import utility
 
 
 from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
-from utility import averageQuaternions
+from quaternion_avg import averageQuaternions
 from gazebo_msgs.msg import ModelStates
 
 class Tag:
@@ -56,15 +56,16 @@ class Tag:
         -   max_error: the maximum distance from the median"""
         
         n_params = len(points[0]) 
-        lsts, filtered_lsts, medians = [], [], []
+        lsts, medians, filtered_lsts = [], [], []
+        for i in range(n_params):
+            lsts.append([])
+            medians.append([])
+            filtered_lsts.append([])
 
         # Looping through points and adding x, y, z to separate lists
         for point in points:
             for i in range(n_params):
-                if i >= len(lsts):
-                    lsts.append([point[i]])
-                else:
-                    lsts[i].append(point[i])
+                lsts[i].append(point[i])
         
         # Looping through parameter lists, sorting them to determine the median
         for lst in lsts:
@@ -73,23 +74,28 @@ class Tag:
 
         # Looping through points to check if the error from the median is too big. If so it deletes the entire point.
         for point in points:
-            for i in range(n_params):
-                if i == len(filtered_lsts):
-                        filtered_lsts.append([])
-                
-                if abs(medians[i] - point[i]) < max_error:
+            if all(abs(point[i] - medians[i]) < max_error for i in range(n_params)):
+                for i in range(n_params):
                     filtered_lsts[i].append(point[i])
-                else:
-                    rospy.loginfo("Error larger than allowed sow deleting the point.")
-                    break
+            else:
+                continue
+
+        #         if i == len(filtered_lsts):
+        #                 filtered_lsts.append([])
+                
+        #         if abs(medians[i] - point[i]) < max_error:
+        #             filtered_lsts[i].append(point[i])
+        #         else:
+        #             rospy.loginfo("Error larger than allowed sow deleting the point.")
+        #             break
             
-            for i in range(len(filtered_lsts)):
-                if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
-                    del filtered_lsts[i][-1]
+        #     for i in range(len(filtered_lsts)):
+        #         if len(filtered_lsts[i]) > len(filtered_lsts[-1]):
+        #             del filtered_lsts[i][-1]
         
-        # To make sure that the number of lists is always the same
-        while len(filtered_lsts) < n_params:
-            filtered_lsts.append([])
+        # # To make sure that the number of lists is always the same
+        # while len(filtered_lsts) < n_params:
+        #     filtered_lsts.append([])
         
         # If there where no valid points it returns just the points without filtering
         if len(filtered_lsts[0]) == 0:
@@ -299,7 +305,6 @@ class VisualLocalization:
         -    tag:         Tag object
         -    robot_frame: the frame in which you want to calculate the transform to the tag
         """
-        
         try:
             t_latest = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
