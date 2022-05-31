@@ -11,7 +11,7 @@
     <arg name="max_error" default="0.2"/>
 
     <arg name="save_location" default="$(find apriltag_localization)/tests/data"/>
-    <arg name="save_name" default="test3_buf10_er02_tdiff02"/>
+    <arg name="save_name" default="test_buf_er_tdiff"/>
     <arg name="save_format" default=".csv"/>
 
 

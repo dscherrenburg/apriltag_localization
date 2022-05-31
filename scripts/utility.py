@@ -2,6 +2,7 @@ import rospy
 from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped, Pose, PoseWithCovariance
 from tf.transformations import quaternion_from_matrix
 import numpy as np
+import numpy.matlib as npm
 
 
 def from_matrix_to_transform_stamped(matrix, frame_id, child_frame_id):
@@ -110,3 +111,55 @@ def distance_weights(distances):
     
     return weights
     
+    
+
+# Q is a Nx4 numpy matrix and contains the quaternions to average in the rows.
+# The quaternions are arranged as (w,x,y,z), with w being the scalar
+# The result will be the average quaternion of the input. Note that the signs
+# of the output quaternion can be reversed, since q and -q describe the same orientation
+
+def averageQuaternions(Q):
+    # Number of quaternions to average
+    M = Q.shape[0]
+    A = npm.zeros(shape=(4,4))
+
+    for i in range(0,M):
+        q = Q[i,:]
+        # multiply q with its transposed version q' and add A
+        A = np.outer(q,q) + A
+
+    # scale
+    A = (1.0/M)*A
+    # compute eigenvalues and -vectors
+    eigenValues, eigenVectors = np.linalg.eig(A)
+    # Sort by largest eigenvalue
+    eigenVectors = eigenVectors[:,eigenValues.argsort()[::-1]]
+    # return the real part of the largest eigenvector (has only real part)
+    return np.real(eigenVectors[:,0].A1)
+
+
+# Average multiple quaternions with specific weights
+# The weight vector w must be of the same length as the number of rows in the
+# quaternion maxtrix Q
+def weightedAverageQuaternions(Q, w):
+    # Number of quaternions to average
+    M = Q.shape[0]
+    A = npm.zeros(shape=(4,4))
+    weightSum = 0
+
+    for i in range(0,M):
+        q = Q[i,:]
+        A = w[i] * np.outer(q,q) + A
+        weightSum += w[i]
+
+    # scale
+    A = (1.0/weightSum) * A
+
+    # compute eigenvalues and -vectors
+    eigenValues, eigenVectors = np.linalg.eig(A)
+
+    # Sort by largest eigenvalue
+    eigenVectors = eigenVectors[:,eigenValues.argsort()[::-1]]
+
+    # return the real part of the largest eigenvector (has only real part)
+    return np.real(eigenVectors[:,0].A1)

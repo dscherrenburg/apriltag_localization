@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import tf.transformations as tft
-from quaternion_avg import averageQuaternions
+from scripts.oud.quaternion_avg import averageQuaternions
 import numpy as np
 
 class SimpleRobotPosition:

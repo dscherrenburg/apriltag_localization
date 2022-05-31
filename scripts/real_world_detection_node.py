@@ -173,9 +173,9 @@ class VisualLocalization:
         self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
         rospy.loginfo("Opened tag location yaml file")
         
-        # self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
-        # self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
-        # rospy.loginfo(self.apriltag_poses)
+        self.model_states = rospy.wait_for_message('gazebo/model_states', ModelStates)
+        self.apriltag_poses = {'tag_' + str(int(name[-3:])) : self.model_states.pose[i] for i, name in enumerate(self.model_states.name) if 'Apriltag' in name}
+        rospy.loginfo(self.apriltag_poses)
         
         self.tags = {'tag_0': Tag(0, self.world_loc_tags['tag_0'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_1': Tag(1, self.world_loc_tags['tag_1'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
@@ -293,16 +293,17 @@ class VisualLocalization:
         return avg_tf_matrix
     
     
-    def get_tf_robot_to_tag(self, tag, robot_frame):
+    def get_tf_robot_to_tag(self, tag, robot_frame, max_time_diff=0.2):
         """
         Returns the transform from the robot_frame to the tag_frame
         -    tag:         Tag object
         -    robot_frame: the frame in which you want to calculate the transform to the tag
         """
+        
         try:
-            t = self.transform_listener.getLatestCommonTime(robot_frame, tag)
+            t_latest = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
-            if t_now.to_sec() - t.to_sec() < self.max_time_diff:
+            if t_now.to_sec() - t_latest.to_sec() < 0.3:
                 self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
                 tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
                 return tf_robot_to_tag
@@ -337,16 +338,12 @@ if __name__ == '__main__':
     rospy.init_node('tag_localization')
     rospy.loginfo("Start up node")
     
+    
+    
     localization_method = rospy.get_param("~localization_method")
     buffer_size = rospy.get_param("~buffer_size")
     max_time_diff = rospy.get_param("~max_time_diff")
     max_error = rospy.get_param("~max_error")
-    
-    rospy.loginfo("\nStarted localization with parameters: \n" + \
-                  "Localization method: " + localization_method + "\n" + \
-                  "Buffer size: " + str(buffer_size) + "\n" + \
-                  "Max time diff: " + str(max_time_diff) + "\n" + \
-                  "Max error: " + str(max_error))
     
     
     tag_localization = VisualLocalization(tag_combination_mode=localization_method, 
@@ -354,6 +351,7 @@ if __name__ == '__main__':
                                           max_time_diff=max_time_diff,
                                           max_error=max_error)
     
+    rospy.loginfo("\n Running the combine_map_and_detections program ...")
     rate = rospy.Rate(60)
     while not rospy.is_shutdown():
         tag_localization.run_localization()

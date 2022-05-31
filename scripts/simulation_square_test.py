@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import numpy as np
 import rospy
-from geometry_msgs.msg import Twist, PoseWithCovarianceStamped
+from geometry_msgs.msg import Twist
 import csv 
 import tf
 import os
@@ -66,7 +66,7 @@ class MoveInSquare:
                     row = [rospy.get_time(), self.true_location[0], self.true_location[1], self.estimated_location_tag[0], self.estimated_location_tag[1], self.estimated_location_amcl[0], self.estimated_location_amcl[1]]
                     writer.writerow(row)
                     
-                    rospy.loginfo("logged: %s", row)
+                    # rospy.loginfo("logged: %s", row)
                     
                     self.publisher_vel.publish(move.move())
                     
@@ -105,6 +105,8 @@ if __name__ == '__main__':
     
     rospy.loginfo(save_location + "/" + save_name + save_format)
 
+    rospy.sleep(2)
+    
     try: 
         os.makedirs(save_location)
     except OSError as fail: 
