@@ -164,13 +164,44 @@ def weightedAverageQuaternions(Q, w):
     # return the real part of the largest eigenvector (has only real part)
     return np.real(eigenVectors[:,0].A1)
 
+def calculate_median(buffer):
+    """Returns the median from the buffer
+    -   buffer: list of poses in following form ([x, y, z], [qx, qy, qz, w])"""
+    n_params = len(buffer[0][0]) 
+    lsts, median= [], []
+    for i in range(n_params):
+        lsts.append([])
+
+    # Looping through points and adding x, y, z to separate lists
+    for detection in buffer:
+        for i in range(n_params):
+            lsts[i].append(detection[0][i])
+    
+    # Looping through parameter lists, sorting them to determine the median
+    for lst in lsts:
+        lst.sort()
+        median.append(lst[int(len(lst)/2)])
+    return median
+
+def close_to_median(buffer, detection, max_error=0.1):
+    """Returns True if error between the median of the current buffer and the detection is smaller than the max_error"""
+    if len(buffer) == 0:
+        return True
+    
+    median = calculate_median(buffer)
+
+    if all([abs(median[i]-detection[0][i])<max_error for i in range(len(median))]):
+        return True
+    else:
+        return False
+
 def median_outlier_filter(points, max_error=0.1):
     """Deletes the outliers from the list of points.
     -   points: list of points (each point is a list of translations)
     -   max_error: the maximum distance from the median"""
     
     n_params = len(points[0]) 
-    lsts, medians, filtered_lsts = [], [], []
+    lsts, median, filtered_lsts, filtered_points = [], [], [], []
     for i in range(n_params):
         lsts.append([])
         filtered_lsts.append([])
@@ -183,11 +214,12 @@ def median_outlier_filter(points, max_error=0.1):
     # Looping through parameter lists, sorting them to determine the median
     for lst in lsts:
         lst.sort()
-        medians.append(lst[int(len(lst)/2)])
+        median.append(lst[int(len(lst)/2)])
 
     # Looping through points to check if the error from the median is too big. If so it deletes the entire point.
     for point in points:
-        if all([(abs(point[i] - medians[i]) < max_error) for i in range(n_params)]):
+        if all([(abs(point[i] - median[i]) < max_error) for i in range(n_params)]):
+            filtered_points.append(point)
             for i in range(n_params):
                 filtered_lsts[i].append(point[i])
         else:
@@ -197,4 +229,4 @@ def median_outlier_filter(points, max_error=0.1):
     if len(filtered_lsts[0]) == 0:
         filtered_lsts = lsts
     
-    return filtered_lsts
+    return filtered_points, filtered_lsts

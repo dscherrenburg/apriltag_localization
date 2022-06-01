@@ -30,48 +30,57 @@ class Tag:
         self.latest_distance_to_tag = None
 
     def valid_latest_detection(self):
-        """Checks the latest detection has not expired"""   
+        """Checks the latest detection has not expired, returns True if latest detection is valid"""   
         if self.latest_detection is None:
             return False
         return (rospy.get_rostime().to_sec() - self.latest_detection.to_sec()) < self.max_time_diff
     
-    def detected(self, detection):
+    def detected(self, detection, max_error=0.1):
         """
         Adds the latest detection to the buffer and checks if the buffer is full
         -   detection: the transform of the detection of this specific tag
         """
         if not self.valid_latest_detection():               #check if the time difference is too big and clear the buffer
             self.detections = []
+        
+        if utility.close_to_median(self.detections, detection, max_error=max_error):
+            self.detections.append(detection)
+            self.latest_detection = rospy.get_rostime()
+        else:
+            pass
+            # rospy.loginfo("########## Detection to far from median #########")
             
-        self.latest_detection = rospy.get_rostime()         #update the latest detection time
-        self.detections.append(detection)                   #add the detection to the buffer
+        # self.latest_detection = rospy.get_rostime()         #update the latest detection time
+        # self.detections.append(detection)                   #add the detection to the buffer
         
         if len(self.detections) > self.buffer_size:         #if the buffer is too big, remove the oldest detection
             self.detections = self.detections[-self.buffer_size:]
 
-
-    def moving_avg(self, max_error=0.1):
+    def moving_avg(self):
         """
         calculates the moving average of the detections. Returns the average pose or none if the buffer is empty.
         -   max_error: the maximum error for the median outlier filter
         """
         # Generates seperate lists with the positions and with the orientation in quaternions
-        position, q = [], []
+        position, q, list_x, list_y, list_z = [], [], [], [], []
         for tf in self.detections:
-            position.append([tf[0][0], tf[0][1], tf[0][2]])
+            # position.append([tf[0][0], tf[0][1], tf[0][2]])
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
+            list_x.append(tf[0][0])
+            list_y.append(tf[0][1])
+            list_z.append(tf[0][2])
         
-        # Filters the outliers
-        filtered = utility.median_outlier_filter(position, max_error)
-        filtered_x, filtered_y, filtered_z = filtered
+        # # Filters the outliers
+        # filtered = utility.median_outlier_filter(position, max_error)
+        # filtered_x, filtered_y, filtered_z = filtered
 
         # calculate the moving average of the detections
         moving_avg = ([0, 0, 0], [0, 0, 0, 0])
-        if len(filtered_x) == 0:
+        if len(list_x) == 0:
             return 0
-        moving_avg[0][0] = sum(filtered_x) / len(filtered_x)
-        moving_avg[0][1] = sum(filtered_y) / len(filtered_y)
-        moving_avg[0][2] = sum(filtered_z) / len(filtered_z)
+        moving_avg[0][0] = sum(list_x) / len(list_x)
+        moving_avg[0][1] = sum(list_y) / len(list_y)
+        moving_avg[0][2] = sum(list_z) / len(list_z)
 
         # calculate the average of the quaternions in the detections
         q_avg = averageQuaternions(np.matrix(q))
@@ -161,8 +170,8 @@ class VisualLocalization:
             if tf_odom_to_tag is None:
                 continue
              
-            self.tags[tag].detected(tf_odom_to_tag)
-            moving_avg = self.tags[tag].moving_avg(max_error=self.max_error)
+            self.tags[tag].detected(tf_odom_to_tag, max_error=self.max_error)
+            moving_avg = self.tags[tag].moving_avg()
             
             world_to_odom = self.calculate_world_position(tag, moving_avg)
             self.tags[tag].latest_distance_to_tag = utility.distance_robot_tag(moving_avg)
@@ -286,7 +295,7 @@ class VisualLocalization:
 
 if __name__ == '__main__':
     rospy.init_node('tag_localization')
-    rospy.loginfo("Start up node")
+    rospy.loginfo("Start up localization node")
     
     localization_method = rospy.get_param("~localization_method")
     buffer_size = rospy.get_param("~buffer_size")
@@ -299,6 +308,8 @@ if __name__ == '__main__':
                   "Max time diff: " + str(max_time_diff) + "\n" + \
                   "Max error: " + str(max_error))
     
+    rospy.loginfo("Waiting to start localization")
+    rospy.sleep(3)
     
     tag_localization = VisualLocalization(tag_combination_mode=localization_method, 
                                           buffer_size=buffer_size, 
