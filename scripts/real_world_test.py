@@ -71,6 +71,18 @@ class RealMoveTest:
                 
                 rospy.sleep(1)
                 start_time = rospy.get_rostime().to_sec()
+            
+            rospy.loginfo("Finished moving")
+            
+            while start_time + 1 > rospy.get_rostime().to_sec():
+                self.record_location_estimate_amcl()
+                self.record_location_estimate_tags()
+                
+                row = [rospy.get_time(), self.estimated_location_tag[0], self.estimated_location_tag[1], self.estimated_location_amcl[0], self.estimated_location_amcl[1]]
+                writer.writerow(row)                
+                self.publish_rate.sleep()
+            
+            rospy.loginfo("Finished recording")
     
     
     def record_location_estimate_tags(self):
@@ -94,15 +106,18 @@ if __name__ == '__main__':
     save_format = rospy.get_param("~save_format")
     
     rospy.loginfo(save_location + "/" + save_name + save_format)
-
+    
     rospy.sleep(3)
     
     try: 
         os.makedirs(save_location)
     except OSError as fail: 
         pass
-        
-    moves = [Move(4, 0.25), Rotate(4, -np.pi/8), Move(4, 0.25)]
+    
+    speed = 1
+    distance = 2.0
+    time = distance/speed
+    moves = [Move(time, speed), Move(time, -speed)]
     
     move_square_test = RealMoveTest(save_location + "/" + save_name + save_format, moves=moves)
     
