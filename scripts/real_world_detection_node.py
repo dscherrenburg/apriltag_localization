@@ -170,7 +170,7 @@ class VisualLocalization:
             combined_world_to_odom = self.combining_visible_tags()
             
             self.publish_tf_map_to_tag(tag)
-            self.publish_tf_map_to_robot(combined_world_to_odom)    
+            self.publish_tf_map_to_robot(combined_world_to_odom) 
 
 
     def calculate_world_position(self, tag_name, tf_odom_to_tag):
@@ -251,7 +251,7 @@ class VisualLocalization:
         """
         
         try:
-            t_latest = self.transform_listener.getLatestCommonTime(robot_frame, tag)
+            t = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
             if t_now.to_sec() - t.to_sec() < self.max_time_diff:
                 self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
