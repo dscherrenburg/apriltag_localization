@@ -113,39 +113,59 @@ def create_plots(data_location, plots_location, test_name, test_format):
 
 def create_data_table(data_location, table_location, data_name, table_name="data_table", data_format=".csv", table_format=".csv"):
 
-    with open(table_location + "/" + table_name + table_format, 'w') as table:
-        writer = csv.writer(table)
+    table = open(table_location + "/" + table_name + table_format, 'a')
+    writer = csv.writer(table)
 
-        f = open(table_location + "/" + table_name + table_format, 'r')
-        table_reader = csv.reader(f)
-        line_count = len(list(table_reader))
-        if line_count == 0:
-            header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error"]
-            writer.writerow(header)
-        
-        "test3_buf10_er020_tdiff02"
-        buffer_size = int(data_name[9:11])
-        max_error = float(data_name[14:17])/100
-        time_difference = float(data_name[-2:])/10
+    f = open(table_location + "/" + table_name + table_format, 'r')
+    table_reader = csv.reader(f)
+    line_count = len(list(table_reader))
+    if line_count == 0:
+        header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error"]
+        writer.writerow(header)
+    
+    "test3_buf10_er020_tdiff02"
+    buffer_size = int(data_name[9:11])
+    max_error = float(data_name[14:17])/100
+    time_difference = float(data_name[-2:])/10
 
-        tag_error, tag_error_x, tag_error_y, time = [], [], [], []
+    tag_error, tag_error_x, tag_error_y, time = [], [], [], []
 
-        with open(data_location + "/" + data_name + data_format, "r") as data:
-            data_reader = csv.reader(data)
-            for row in data_reader:
-                tag_x_error = abs(float(row[1])-float(row[3]))
-                tag_y_error = abs(float(row[2])-float(row[4]))
-                tag_dist_error = np.sqrt(tag_x_error**2 + tag_y_error**2)
-                tag_error_x.append(tag_x_error)
-                tag_error_y.append(tag_y_error)
-                tag_error.append(tag_dist_error)
-                time.append(row[0])
-            avg_error = sum(tag_error) / len(tag_error)
-        
-        data = [buffer_size, max_error, time_difference, avg_error]
-        writer.writerow(data)
+    with open(data_location + "/" + data_name + data_format, "r") as data:
+        data_reader = csv.reader(data)
+        header = next(data_reader)
+        for row in data_reader:
+            tag_x_error = abs(float(row[1])-float(row[3]))
+            tag_y_error = abs(float(row[2])-float(row[4]))
+            tag_dist_error = np.sqrt(tag_x_error**2 + tag_y_error**2)
+            tag_error_x.append(tag_x_error)
+            tag_error_y.append(tag_y_error)
+            tag_error.append(tag_dist_error)
+            time.append(row[0])
+        avg_error = sum(tag_error) / len(tag_error)
+    
+    data = [buffer_size, max_error, time_difference, avg_error]
+    writer.writerow(data)
 
+def plot_table(table_location, table_name="data_table", table_format=".csv"):
+    table = open(table_location + "/" + table_name + table_format, 'r')
+    table_reader = csv.reader(table)
+    header = next(table_reader)
+    buffer_size, max_error, time_difference, avg_error = [], [], [], []
+    for row in table_reader:
+        buffer_size.append(row[0])
+        max_error.append(row[1])
+        time_difference.append(row[2])
+        avg_error.append(row[3])
 
+    plt.figure()
+    plt.plot(buffer_size, max_error, label="Maximum error")
+    # plt.plot(buffer_size, time_difference, label="Maximum time difference")
+    # plt.plot(buffer_size, avg_error, label="Average distance error")
+    plt.xlabel("Buffer size")
+    plt.ylabel("Error")
+    plt.legend()
+    plt.title("Error vs buffer size")
+    plt.savefig(table_location + "/" + table_name + ".png")
 
 def all_plots(data_location, plots_location, data_name=None, data_format=".csv", plotformat=".png"):
     if data_name is None:
@@ -156,6 +176,7 @@ def all_plots(data_location, plots_location, data_name=None, data_format=".csv",
 
             create_data_table(data_location, plots_location, file_name, data_format=file_format)
             # create_plots(data_location, plots_location, file_name, file_format)
+        plot_table(plots_location)
     else:
         create_plots(data_location, plots_location, data_name, data_format)
 
