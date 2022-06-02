@@ -14,7 +14,7 @@ def create_data_table_per_test(data_location, table_location, data_name, table_n
     with open(table_location + "/" + table_name + table_format, 'a+') as table:
         writer = csv.writer(table)
         if line_count == 0:
-            header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error", "Average distance error amcl"]
+            header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error", "Average enpoint error", "Average distance error amcl"]
             writer.writerow(header)
 
         buffer_size = int(data_name[8:10])
@@ -45,8 +45,10 @@ def create_data_table_per_test(data_location, table_location, data_name, table_n
                 time.append(row[0])
             avg_error = sum(tag_error) / len(tag_error)
             avg_amcl_error = sum(amcl_error) / len(amcl_error)
+        
+        endpoint_error = sum(tag_error[-3:]) / len(tag_error[-3:])
     
-        data = [buffer_size, max_error, time_difference, avg_error, avg_amcl_error]
+        data = [buffer_size, max_error, time_difference, avg_error, endpoint_error, avg_amcl_error]
         writer.writerow(data)
 
 
@@ -76,52 +78,74 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
         header = next(table_reader)
 
         for row in table_reader:
-            buffer_size, max_error, time_difference, avg_error, amcl_error = [float(row[i]) for i in range(len(row))]
+            buffer_size, max_error, time_difference, avg_error, endpoint_error, amcl_error = [float(row[i]) for i in range(len(row))]
             avg_amcl_error.append(amcl_error)
             if buffer_size not in data_dict:
-                data_dict[buffer_size] = {max_error: [avg_error]}
+                data_dict[buffer_size] = {max_error: ([avg_error],[endpoint_error])}
             else:
                 if max_error not in data_dict[buffer_size]:
-                    data_dict[buffer_size][max_error] = [avg_error]
+                    data_dict[buffer_size][max_error] = ([avg_error], [endpoint_error])
                 else:
-                    data_dict[buffer_size][max_error].append(avg_error)
-                    data_dict[buffer_size][max_error].append(amcl_error)
+                    data_dict[buffer_size][max_error][0].append(avg_error)
+                    data_dict[buffer_size][max_error][1].append(endpoint_error)
                     
     plot_dict = {}
     for buffer_size in data_dict:
-        plot_dict[buffer_size] = {"x": [], "y": []}
+        plot_dict[buffer_size] = {"x": [], "y": [], "y_endpoint": []}
 
     
     with open(save_location + "/" + save_name + ".csv", 'w') as new_table:
         new_table_w = csv.writer(new_table)
-        header = ["Buffer size", "Maximum error", "Average error", "Average error amcl"]
+        header = ["Buffer size", "Maximum error", "Average error", "Average end error"]
         new_table_w.writerow(header)
 
         for buffer_size in data_dict:
             for max_error in data_dict[buffer_size]:
-                mean_error, std_error = calculate_mean_std(data_dict[buffer_size][max_error])
+                mean_error, std_error = calculate_mean_std(data_dict[buffer_size][max_error][0])
                 
-                data = [buffer_size, max_error, mean_error]
+                end_data = data_dict[buffer_size][max_error][1]
+                mean_end_error = sum(end_data) / len(end_data)
+                
+                data = [buffer_size, max_error, mean_error, mean_end_error]
                 new_table_w.writerow(data)
                 
                 plot_dict[buffer_size]["x"].append(max_error)
                 plot_dict[buffer_size]["y"].append(mean_error)
+                plot_dict[buffer_size]["y_endpoint"].append(mean_end_error)
         
     if plot:
         plt.figure(1)
-        
-        for buffersize in plot_dict:
-            zipped_list = zip(plot_dict[buffersize]["x"], plot_dict[buffersize]["y"])
+        colors = ["r","b","g","y","c","m","k"]
+        for i, buffersize in enumerate(plot_dict):
+            zipped_list = zip(plot_dict[buffersize]["x"], plot_dict[buffersize]["y"], plot_dict[buffersize]["y_endpoint"])
             sorted_list = sorted(zipped_list, key=lambda x: x[0])
             tuples = zip(*sorted_list)
-            x, y = [list(tuple) for tuple in tuples]
+            x, y, y_end = [list(tuple) for tuple in tuples]
             
-            plt.plot(x, y, label="Buffer size: " + str(int(buffersize)))
+            
+            plt.plot(x, y, c=colors[i], label="Buffer size: " + str(int(buffersize)))
         
         plt.xlabel("Maximum error")
         plt.ylabel("Average error")
+        plt.title("Average error per buffer size vs maximum error")
         plt.legend()
-        plt.show()
+        plt.savefig(save_location + "/" + save_name + ".png")
+        
+        plt.figure(2)
+        for i, buffersize in enumerate(plot_dict):
+            zipped_list = zip(plot_dict[buffersize]["x"], plot_dict[buffersize]["y"], plot_dict[buffersize]["y_endpoint"])
+            sorted_list = sorted(zipped_list, key=lambda x: x[0])
+            tuples = zip(*sorted_list)
+            x, y, y_end = [list(tuple) for tuple in tuples]
+            
+            
+            plt.plot(x, y_end, c=colors[i], label="Buffer size: " + str(int(buffersize)))
+        
+        plt.xlabel("Maximum error")
+        plt.ylabel("Average end point error")
+        plt.title("Average end point error per buffer size vs maximum error")
+        plt.legend()
+        plt.savefig(save_location + "/" + save_name + "_endpoint_error" + ".png")
 
 
 def calculate_amcl_error(processed_data_location, processed_data_name):
@@ -131,30 +155,10 @@ def calculate_amcl_error(processed_data_location, processed_data_name):
 
         amcl_errors = []
         for row in table_reader:
-            buffer_size, max_error, time_difference, avg_error, amcl_error = [float(row[i]) for i in range(len(row))]
+            buffer_size, max_error, time_difference, avg_error, avg_endpoint_error, amcl_error = [float(row[i]) for i in range(len(row))]
             amcl_errors.append(amcl_error)
         avg_amcl_error = sum(amcl_errors) / len(amcl_errors)
     return avg_amcl_error
-
-
-def calculate_endpoint_error(processed_data_location, processed_data_name):
-    data_dict = {}
-    
-    with open(processed_data_location + "/" + processed_data_name + ".csv", 'r') as table:
-        table_reader = csv.reader(table)
-        header = next(table_reader)
-
-        for row in table_reader:
-            buffer_size, max_error, time_difference, avg_error, amcl_error = [float(row[i]) for i in range(len(row))]
-            if buffer_size not in data_dict:
-                data_dict[buffer_size] = {max_error: [avg_error]}
-            else:
-                if max_error not in data_dict[buffer_size]:
-                    data_dict[buffer_size][max_error] = [avg_error]
-                else:
-                    data_dict[buffer_size][max_error].append(avg_error)
-                    data_dict[buffer_size][max_error].append(amcl_error)
-
 
 
 if __name__ == "__main__":
@@ -163,9 +167,9 @@ if __name__ == "__main__":
     data_location = test_location + "/data"
     table_location = test_location
     
-    create_data_table_per_test_full(data_location, table_location, table_name="test_table")
-    create_data_table_total_avg_error(table_location, "test_table", table_location, "total_avg_error_table")
-    print(calculate_amcl_error(table_location, "test_table"))
+    create_data_table_per_test_full(data_location, table_location, table_name="median_processed_test_data_table")
+    create_data_table_total_avg_error(table_location, "median_processed_test_data_table", table_location, "median_total_avg_error_table")
+    print(calculate_amcl_error(table_location, "median_processed_test_data_table"))
     
     
     

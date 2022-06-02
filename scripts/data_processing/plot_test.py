@@ -154,7 +154,7 @@ def all_plots(data_location, plots_location, data_name=None, data_format=".csv",
 if __name__ == '__main__':
     
     # test_location = "/home/daan/localization_ws/src/apriltag_localization/straight_tests"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests/median"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests/mean"
 
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
