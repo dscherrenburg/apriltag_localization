@@ -63,7 +63,17 @@ standalone_tags:
     {id: 6, size: 0.24},
     {id: 7, size: 0.24},
     {id: 8, size: 0.24},
-    {id: 9, size: 0.24}
+    {id: 9, size: 0.24},
+    {id: 10, size: 0.24},
+    {id: 11, size: 0.24},
+    {id: 12, size: 0.24},
+    {id: 13, size: 0.24},
+    {id: 14, size: 0.24},
+    {id: 15, size: 0.24},
+    {id: 16, size: 0.24},
+    {id: 17, size: 0.24},
+    {id: 18, size: 0.24},
+    {id: 19, size: 0.24}
   ]
 ```
 
