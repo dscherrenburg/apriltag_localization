@@ -183,6 +183,24 @@ def calculate_median(buffer):
         median.append(lst[int(len(lst)/2)])
     return median
 
+def calculate_mean(buffer):
+    """Returns the mean from the buffer
+    -   buffer: list of poses in following form ([x, y, z], [qx, qy, qz, w])"""
+    n_params = len(buffer[0][0]) 
+    lsts, mean= [], []
+    for i in range(n_params):
+        lsts.append([])
+
+    # Looping through points and adding x, y, z to separate lists
+    for detection in buffer:
+        for i in range(n_params):
+            lsts[i].append(detection[0][i])
+    
+    # Looping through parameter lists, sorting them to determine the mean
+    for lst in lsts:
+        mean.append(np.mean(lst))
+    return mean
+
 def close_to_median(buffer, detection, max_error=0.1):
     """Returns True if error between the median of the current buffer and the detection is smaller than the max_error"""
     if len(buffer) == 0:
@@ -191,6 +209,18 @@ def close_to_median(buffer, detection, max_error=0.1):
     median = calculate_median(buffer)
 
     if all([abs(median[i]-detection[0][i])<max_error for i in range(len(median))]):
+        return True
+    else:
+        return False
+
+def close_to_mean(buffer, detection, max_error=0.1):
+    """Returns True if error between the mean of the current buffer and the detection is smaller than the max_error"""
+    if len(buffer) == 0:
+        return True
+    
+    mean = calculate_median(buffer)
+
+    if all([abs(mean[i]-detection[0][i])<max_error for i in range(len(mean))]):
         return True
     else:
         return False
