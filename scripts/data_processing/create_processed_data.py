@@ -14,14 +14,14 @@ def create_data_table_per_test(data_location, table_location, data_name, table_n
     with open(table_location + "/" + table_name + table_format, 'a+') as table:
         writer = csv.writer(table)
         if line_count == 0:
-            header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error"]
+            header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error", "Average distance error amcl"]
             writer.writerow(header)
 
         buffer_size = int(data_name[8:10])
         max_error = float(data_name[13:16])/100
         time_difference = float(data_name[22:24])/10
 
-        tag_error, tag_error_x, tag_error_y, time = [], [], [], []
+        tag_error, tag_error_x, tag_error_y, time, amcl_error_x, amcl_error_y, amcl_error = [], [], [], [], [], [], []
 
         with open(data_location + "/" + data_name + data_format, "r") as data:
             data_reader = csv.reader(data)
@@ -29,14 +29,24 @@ def create_data_table_per_test(data_location, table_location, data_name, table_n
             for row in data_reader:
                 tag_x_error = abs(float(row[1])-float(row[3]))
                 tag_y_error = abs(float(row[2])-float(row[4]))
+                
                 tag_dist_error = np.sqrt(tag_x_error**2 + tag_y_error**2)
                 tag_error_x.append(tag_x_error)
                 tag_error_y.append(tag_y_error)
                 tag_error.append(tag_dist_error)
+                
+                amcl_x_error = abs(float(row[1])-float(row[5]))
+                amcl_y_error = abs(float(row[2])-float(row[6]))
+                
+                amcl_dist_error = np.sqrt(amcl_x_error**2 + amcl_y_error**2)
+                amcl_error_x.append(amcl_x_error)
+                amcl_error_y.append(amcl_y_error)
+                amcl_error.append(amcl_dist_error)
                 time.append(row[0])
             avg_error = sum(tag_error) / len(tag_error)
+            avg_amcl_error = sum(amcl_error) / len(amcl_error)
     
-        data = [buffer_size, max_error, time_difference, avg_error]
+        data = [buffer_size, max_error, time_difference, avg_error, avg_amcl_error]
         writer.writerow(data)
 
 
@@ -60,12 +70,14 @@ def calculate_mean_std(data):
 
 def create_data_table_total_avg_error(processed_data_location, processed_data_name, save_location, save_name, plot=True):
     data_dict = {}
+    avg_amcl_error = []
     with open(processed_data_location + "/" + processed_data_name + ".csv", 'r') as table:
         table_reader = csv.reader(table)
         header = next(table_reader)
 
         for row in table_reader:
-            buffer_size, max_error, time_difference, avg_error = [float(row[i]) for i in range(len(row))]
+            buffer_size, max_error, time_difference, avg_error, amcl_error = [float(row[i]) for i in range(len(row))]
+            avg_amcl_error.append(amcl_error)
             if buffer_size not in data_dict:
                 data_dict[buffer_size] = {max_error: [avg_error]}
             else:
@@ -73,6 +85,7 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
                     data_dict[buffer_size][max_error] = [avg_error]
                 else:
                     data_dict[buffer_size][max_error].append(avg_error)
+                    data_dict[buffer_size][max_error].append(amcl_error)
                     
     plot_dict = {}
     for buffer_size in data_dict:
@@ -81,7 +94,7 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
     
     with open(save_location + "/" + save_name + ".csv", 'w') as new_table:
         new_table_w = csv.writer(new_table)
-        header = ["Buffer size", "Maximum error", "Average error"]
+        header = ["Buffer size", "Maximum error", "Average error", "Average error amcl"]
         new_table_w.writerow(header)
 
         for buffer_size in data_dict:
@@ -103,7 +116,7 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
             tuples = zip(*sorted_list)
             x, y = [list(tuple) for tuple in tuples]
             
-            plt.plot(x, y, label="Buffer size: " + str(buffersize))
+            plt.plot(x, y, label="Buffer size: " + str(int(buffersize)))
         
         plt.xlabel("Maximum error")
         plt.ylabel("Average error")
@@ -111,14 +124,48 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
         plt.show()
 
 
+def calculate_amcl_error(processed_data_location, processed_data_name):
+    with open(processed_data_location + "/" + processed_data_name + ".csv", 'r') as table:
+        table_reader = csv.reader(table)
+        header = next(table_reader)
+
+        amcl_errors = []
+        for row in table_reader:
+            buffer_size, max_error, time_difference, avg_error, amcl_error = [float(row[i]) for i in range(len(row))]
+            amcl_errors.append(amcl_error)
+        avg_amcl_error = sum(amcl_errors) / len(amcl_errors)
+    return avg_amcl_error
+
+
+def calculate_endpoint_error(processed_data_location, processed_data_name):
+    data_dict = {}
+    
+    with open(processed_data_location + "/" + processed_data_name + ".csv", 'r') as table:
+        table_reader = csv.reader(table)
+        header = next(table_reader)
+
+        for row in table_reader:
+            buffer_size, max_error, time_difference, avg_error, amcl_error = [float(row[i]) for i in range(len(row))]
+            if buffer_size not in data_dict:
+                data_dict[buffer_size] = {max_error: [avg_error]}
+            else:
+                if max_error not in data_dict[buffer_size]:
+                    data_dict[buffer_size][max_error] = [avg_error]
+                else:
+                    data_dict[buffer_size][max_error].append(avg_error)
+                    data_dict[buffer_size][max_error].append(amcl_error)
+
+
+
 if __name__ == "__main__":
-    test_location = "./straight_tests/mean"
-    # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests"
+    # test_location = "./straight_tests/mean"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests/median"
     data_location = test_location + "/data"
     table_location = test_location
     
     create_data_table_per_test_full(data_location, table_location, table_name="test_table")
     create_data_table_total_avg_error(table_location, "test_table", table_location, "total_avg_error_table")
+    print(calculate_amcl_error(table_location, "test_table"))
     
     
     
