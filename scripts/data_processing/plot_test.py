@@ -22,8 +22,6 @@ def create_plots(data_location, plots_location, test_name, test_format):
         reader = csv.reader(f)
         header = next(reader)
         first_values = next(reader)
-        print(header)
-        print(first_values)
         real_path_data.append((mpath.Path.MOVETO, (first_values[1], first_values[2])))
         tag_path_data.append((mpath.Path.MOVETO, (first_values[3], first_values[4])))
         amcl_path_data.append((mpath.Path.MOVETO, (first_values[5], first_values[6])))
@@ -62,7 +60,8 @@ def create_plots(data_location, plots_location, test_name, test_format):
     ax.add_patch(real_patch)
     ax.add_patch(tag_patch)
     ax.add_patch(amcl_patch)
-    ax.plot(-0.92, 1.38, 'go', label='Starting point')
+    ax.plot(-1, 2, 'go', label='Starting point')
+    ax.plot(0, 0, 'go', c="r", label='Origin')
     plt.legend()
     plt.title("Path estimation")
     plt.xlabel("x")
@@ -112,40 +111,6 @@ def create_plots(data_location, plots_location, test_name, test_format):
     plt.title("Error in global distance of tag estimation")
     plt.savefig(save_location  + "/" + test_name + ".png")
 
-def create_data_table(data_location, table_location, data_name, table_name="data_table", data_format=".csv", table_format=".csv"):
-
-    table = open(table_location + "/" + table_name + table_format, 'a')
-    writer = csv.writer(table)
-
-    f = open(table_location + "/" + table_name + table_format, 'r')
-    table_reader = csv.reader(f)
-    line_count = len(list(table_reader))
-    if line_count == 0:
-        header = ["Buffer size", "Maximum error", "Maximum time difference", "Average distance error"]
-        writer.writerow(header)
-    
-    "test3_buf10_er020_tdiff02"
-    buffer_size = int(data_name[9:11])
-    max_error = float(data_name[14:17])/100
-    time_difference = float(data_name[-2:])/10
-
-    tag_error, tag_error_x, tag_error_y, time = [], [], [], []
-
-    with open(data_location + "/" + data_name + data_format, "r") as data:
-        data_reader = csv.reader(data)
-        header = next(data_reader)
-        for row in data_reader:
-            tag_x_error = abs(float(row[1])-float(row[3]))
-            tag_y_error = abs(float(row[2])-float(row[4]))
-            tag_dist_error = np.sqrt(tag_x_error**2 + tag_y_error**2)
-            tag_error_x.append(tag_x_error)
-            tag_error_y.append(tag_y_error)
-            tag_error.append(tag_dist_error)
-            time.append(row[0])
-        avg_error = sum(tag_error) / len(tag_error)
-    
-    data = [buffer_size, max_error, time_difference, avg_error]
-    writer.writerow(data)
 
 def plot_table(table_location, table_name="data_table", table_format=".csv"):
     table = open(table_location + "/" + table_name + table_format, 'r')
@@ -161,7 +126,7 @@ def plot_table(table_location, table_name="data_table", table_format=".csv"):
     plt.figure()
     plt.plot(buffer_size, max_error, label="Maximum error")
     # plt.plot(buffer_size, time_difference, label="Maximum time difference")
-    # plt.plot(buffer_size, avg_error, label="Average distance error")
+    # plt.plot(buffer_size, avg_errpassor, label="Average distance error")
     plt.xlabel("Buffer size")
     plt.ylabel("Error")
     plt.legend()
@@ -183,22 +148,19 @@ def all_plots(data_location, plots_location, data_name=None, data_format=".csv",
 
 
 if __name__ == '__main__':
-    # save_name = rospy.get_param("~test_file_name")
-    # save_location = rospy.get_param("~test_file_location")
-    # save_format = rospy.get_param("~test_file_format")
     
     test_location = "/home/daan/localization_ws/src/apriltag_localization/straight_tests"
     # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests"
+
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
-    # save_name = "test3_buf10_er02_tdiff02"
-    # data_format = ".csv"
 
     try: 
         os.makedirs(plots_location)
     except OSError as fail: 
         pass
 
-    # create_plots(data_location, plots_location, save_name, data_format)
     all_plots(data_location, plots_location)
+    # all_plots(data_location, plots_location)
+    
 
