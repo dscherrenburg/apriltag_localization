@@ -124,15 +124,16 @@ class Robot:
 class VisualLocalization:
     """Class for the calculation of the position of the robot in the world,
        using the position of the tags and the transforms from the robot to the tags."""
-    def __init__(self, tag_combination_mode="weighted_average", filter_mode="median_outlier", buffer_size=10, max_time_diff=0.2, max_error=0.1):
+    def __init__(self, tag_combination_mode="weighted_average", filter_mode="median", buffer_size=10, max_time_diff=0.2, max_error=0.1):
         """
         -   tag_combination_mode: method for the combining of the estimations from seperate tags. ("weighted average", "average")
-        -   filter_mode: method for filtering outliers. ("median_outlier")
+        -   filter_mode: method for filtering outliers. ("median", "mean")
         """
         self.tag_combination_mode = tag_combination_mode
         self.buffer_size = buffer_size
         self.max_time_diff = max_time_diff
         self.max_error = max_error
+        self.filter_mode = filter_mode
         
         # Imports the location of the tags in the world
         self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
@@ -175,7 +176,7 @@ class VisualLocalization:
             if tf_odom_to_tag is None:
                 continue
              
-            self.tags[tag].detected(tf_odom_to_tag, max_error=self.max_error)
+            self.tags[tag].detected(tf_odom_to_tag, max_error=self.max_error, filter_mode=self.filter_mode)
             moving_avg = self.tags[tag].moving_avg()
             
             world_to_odom = self.calculate_world_position(tag, moving_avg)
