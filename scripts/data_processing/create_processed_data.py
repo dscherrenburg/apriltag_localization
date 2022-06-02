@@ -88,7 +88,7 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
 
 
 if __name__ == "__main__":
-    test_location = "./straight_tests"
+    test_location = "./straight_tests/mean"
     # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests"
     data_location = test_location + "/data"
     table_location = test_location

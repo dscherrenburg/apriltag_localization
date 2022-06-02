@@ -308,12 +308,14 @@ if __name__ == '__main__':
     buffer_size = rospy.get_param("~buffer_size")
     max_time_diff = rospy.get_param("~max_time_diff")
     max_error = rospy.get_param("~max_error")
+    filter_mode = rospy.get_param("~filter_mode")
     
     rospy.loginfo("\nStarted localization with parameters: \n" + \
                   "Localization method: " + localization_method + "\n" + \
                   "Buffer size: " + str(buffer_size) + "\n" + \
                   "Max time diff: " + str(max_time_diff) + "\n" + \
-                  "Max error: " + str(max_error))
+                  "Max error: " + str(max_error) + "\n" + \
+                  "Filter mode: " + filter_mode + "\n")
     
     rospy.loginfo("Waiting to start localization")
     rospy.sleep(1)
@@ -321,7 +323,8 @@ if __name__ == '__main__':
     tag_localization = VisualLocalization(tag_combination_mode=localization_method, 
                                           buffer_size=buffer_size, 
                                           max_time_diff=max_time_diff,
-                                          max_error=max_error)
+                                          max_error=max_error,
+                                          filter_mode=filter_mode)
     
     rate = rospy.Rate(60)
     while not rospy.is_shutdown():
