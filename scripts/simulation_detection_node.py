@@ -179,6 +179,7 @@ class VisualLocalization:
             
             combined_world_to_odom = self.combining_visible_tags()
             
+
             self.publish_tf_map_to_tag(tag)
             self.publish_tf_map_to_robot(combined_world_to_odom)    
 
@@ -309,7 +310,7 @@ if __name__ == '__main__':
                   "Max error: " + str(max_error))
     
     rospy.loginfo("Waiting to start localization")
-    rospy.sleep(3)
+    rospy.sleep(1)
     
     tag_localization = VisualLocalization(tag_combination_mode=localization_method, 
                                           buffer_size=buffer_size, 
