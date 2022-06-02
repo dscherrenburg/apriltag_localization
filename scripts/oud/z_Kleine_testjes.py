@@ -6,4 +6,5 @@
 # for folder in datafolders:
 #     shutil.copy("/home/daan/localization_ws/src/apriltag_localization/tests/" + folder + "/" + folder + ".csv", "/home/daan/localization_ws/src/apriltag_localization/tests/data/")
 
-print(abs(4-6)<3)
+data_name = "test3_buf10_er02_tdiff02"
+print(data_name[9:11])
