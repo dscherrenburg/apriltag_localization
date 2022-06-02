@@ -80,7 +80,6 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
 
         for buffer_size in data_dict:
             for max_error in data_dict[buffer_size]:
-                print(data_dict[buffer_size][max_error])
                 mean_error, std_error = calculate_mean_std(data_dict[buffer_size][max_error])
                 
                 data = [buffer_size, max_error, mean_error]

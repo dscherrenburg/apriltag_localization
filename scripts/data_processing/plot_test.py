@@ -22,8 +22,6 @@ def create_plots(data_location, plots_location, test_name, test_format):
         reader = csv.reader(f)
         header = next(reader)
         first_values = next(reader)
-        print(header)
-        print(first_values)
         real_path_data.append((mpath.Path.MOVETO, (first_values[1], first_values[2])))
         tag_path_data.append((mpath.Path.MOVETO, (first_values[3], first_values[4])))
         amcl_path_data.append((mpath.Path.MOVETO, (first_values[5], first_values[6])))
@@ -160,7 +158,7 @@ if __name__ == '__main__':
     except OSError as fail: 
         pass
 
-    # create_plots(data_location, plots_location, save_name, data_format)
+    all_plots(data_location, plots_location)
     # all_plots(data_location, plots_location)
     
 
