@@ -76,8 +76,19 @@ standalone_tags:
     {id: 19, size: 0.24}
   ]
 ```
+## Start testing
+```
+cd ~/localization_ws
+source devel/setup.bash
+roscd retail_store_simulation/
+source scripts/set_gazebo_env.sh
+cd ~/localization_ws/
+roslaunch apriltag_localization simulation_test_straight.launch max_error:=0.AA buffer_size:=BB save_name:=test_bufBB_er0AA_tdiff02_N
+```
 
-## Startup
+
+
+## Startup (Not needed for now)
 #### Launching apriltag detection (Terminal 1)
 ```
 cd ~/localization_ws
