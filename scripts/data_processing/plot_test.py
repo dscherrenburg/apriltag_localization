@@ -97,20 +97,20 @@ def create_plots(data_location, plots_location, test_name, test_format):
     # plt.title("Error in y of tag estimation")
     # plt.savefig(save_location  + "/" + test_name + ".png")
 
-    # # Error in distance
-    # dir_name = "tag_error_in_distance"
-    # save_location = os.path.join(plots_location, dir_name)
-    # try: 
-    #     os.makedirs(save_location)
-    # except OSError: 
-    #     pass
-    # plt.figure()
-    # plt.axhline(y = avg_error, color = 'r', linestyle = '-')
-    # plt.plot(time, tag_error)
-    # plt.xlabel('Time')
-    # plt.ylabel('Error in distance')
-    # plt.title("Error in global distance of tag estimation")
-    # plt.savefig(save_location  + "/" + test_name + ".png")
+    # Error in distance
+    dir_name = "tag_error_in_distance"
+    save_location = os.path.join(plots_location, dir_name)
+    try: 
+        os.makedirs(save_location)
+    except OSError: 
+        pass
+    plt.figure()
+    plt.axhline(y = avg_error, color = 'r', linestyle = '-')
+    plt.plot(time, tag_error)
+    plt.xlabel('Time')
+    plt.ylabel('Error in distance')
+    plt.title("Error in global distance of tag estimation")
+    plt.savefig(save_location  + "/" + test_name + ".png")
 
 def create_data_table(data_location, table_location, data_name, table_name="data_table", data_format=".csv", table_format=".csv"):
 
