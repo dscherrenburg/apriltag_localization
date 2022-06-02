@@ -12,7 +12,7 @@ def create_plots(data_location, plots_location, test_name, test_format):
     d = 70
     plt.figure(0)
     fig, ax = plt.subplots()
-    ax.axis([-1.4, -0.6, 0.8, 2.2])
+    ax.axis([-3, -1, -0.5, 1.8])
     # [time, truex, truey, tagx, tagy, amclx, amcly]
     real_path_data, tag_path_data, amcl_path_data, tag_error, tag_error_x, tag_error_y, time = [], [], [], [], [], [], []
     
@@ -154,7 +154,7 @@ def all_plots(data_location, plots_location, data_name=None, data_format=".csv",
 if __name__ == '__main__':
     
     # test_location = "/home/daan/localization_ws/src/apriltag_localization/straight_tests"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests/mean"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
 
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"

@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from simulation_straight_test import SimulationMove
 import rospy
 from geometry_msgs.msg import Twist, PoseWithCovarianceStamped
@@ -37,10 +38,10 @@ if __name__ == "__main__":
         pose = PoseWithCovarianceStamped()
         pose.header.frame_id = "map"
         pose.header.stamp = rospy.get_rostime()
-        pose.pose.pose.position.x = -1
-        pose.pose.pose.position.y = 2
-        pose.pose.pose.orientation.w = 0.7071408
-        pose.pose.pose.orientation.z = -0.7070727
+        pose.pose.pose.position.x = -2.5
+        pose.pose.pose.position.y = 1.5
+        pose.pose.pose.orientation.w = 1
+        pose.pose.pose.orientation.z = 0
         initial_pose_pub.publish(pose)
         i += 1
         rospy.sleep(0.01)
@@ -55,10 +56,9 @@ if __name__ == "__main__":
         pass
         
     time = 5
-    distance = 1
-    moves = [MoveAndTurn(time, distance/time, (np.pi/2)/time)]
+    distance = 2
+    moves = [MoveAndTurn(5.4, 0.4, -0.3)]
     
     move_square_test = SimulationMove(save_location + "/" + save_name + save_format, moves=moves)
     
     move_square_test.move()
-    SimulationMove()

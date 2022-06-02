@@ -163,13 +163,13 @@ def calculate_amcl_error(processed_data_location, processed_data_name):
 
 if __name__ == "__main__":
     # test_location = "./straight_tests/mean"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests/median"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
     data_location = test_location + "/data"
     table_location = test_location
     
-    create_data_table_per_test_full(data_location, table_location, table_name="median_processed_test_data_table")
-    create_data_table_total_avg_error(table_location, "median_processed_test_data_table", table_location, "median_total_avg_error_table")
-    print(calculate_amcl_error(table_location, "median_processed_test_data_table"))
+    create_data_table_per_test_full(data_location, table_location, table_name="turn_median_processed_test_data_table")
+    create_data_table_total_avg_error(table_location, "turn_median_processed_test_data_table", table_location, "turn_median_total_avg_error_table")
+    print(calculate_amcl_error(table_location, "turn_median_processed_test_data_table"))
     
     
     

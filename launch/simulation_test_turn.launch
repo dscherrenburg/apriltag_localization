@@ -25,7 +25,7 @@
     <arg name="rviz" default="false"/>
     <arg name="gzclient" default="false"/>
     <arg name="gzpose" default="-x -1.0 -y 2.0 -z 0.0 -R 0.0 -P 0.0 -Y -1.5707" />
-    <arg name="world" default="straight_test"/>
+    <arg name="world" default="turn_test"/>
     <arg name="map" default="$(find retail_store_simulation)/maps/full_demo"/>
     <arg name="use_aruco" default="false"/>
     <arg name="use_moveit_camera" default="true"/>
