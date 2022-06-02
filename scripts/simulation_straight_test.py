@@ -108,8 +108,6 @@ class SimulationMove:
 if __name__ == '__main__':
     rospy.init_node('move_square_test')
     
-    
-    
     save_location = rospy.get_param("~save_location")
     save_name = rospy.get_param("~save_name")
     save_format = rospy.get_param("~save_format")

@@ -9,8 +9,9 @@
     <arg name="buffer_size" default="10"/>
     <arg name="max_time_diff" default="0.2"/>
     <arg name="max_error" default="0.2"/>
+    <arg name="filter_mode" default="mean"/>
 
-    <arg name="save_location" default="$(find apriltag_localization)/straight_tests/data"/>
+    <arg name="save_location" default="$(find apriltag_localization)/straight_tests/mean/data"/>
     <arg name="save_name" default="test_buf_er_tdiff"/>
     <arg name="save_format" default=".csv"/>
 
@@ -52,6 +53,7 @@
         <param name="buffer_size" type="int" value="$(arg buffer_size)" />
         <param name="max_time_diff" type="double" value="$(arg max_time_diff)" />
         <param name="max_error" type="double" value="$(arg max_error)" />
+        <param name="filter_mode" type="string" value="$(arg filter_mode)" />
     </node>
 
     <node pkg="apriltag_localization" name="simulation_straight_test" type="simulation_straight_test.py" output="screen">
