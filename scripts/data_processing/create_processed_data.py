@@ -1,6 +1,7 @@
 import csv
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 
 def create_data_table_per_test(data_location, table_location, data_name, table_name="data_table", data_format=".csv", table_format=".csv"):
     try:
@@ -73,9 +74,9 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
                 else:
                     data_dict[buffer_size][max_error].append(avg_error)
                     
-    new_dict = {}
+    plot_dict = {}
     for buffer_size in data_dict:
-        new_dict[buffer_size] = {"x": [], "y": []}
+        plot_dict[buffer_size] = {"x": [], "y": []}
 
     
     with open(save_location + "/" + save_name + ".csv", 'w') as new_table:
@@ -89,9 +90,25 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
                 
                 data = [buffer_size, max_error, mean_error]
                 new_table_w.writerow(data)
+                
+                plot_dict[buffer_size]["x"].append(max_error)
+                plot_dict[buffer_size]["y"].append(mean_error)
         
-    
+    if plot:
+        plt.figure(1)
         
+        for buffersize in plot_dict:
+            zipped_list = zip(plot_dict[buffersize]["x"], plot_dict[buffersize]["y"])
+            sorted_list = sorted(zipped_list, key=lambda x: x[0])
+            tuples = zip(*sorted_list)
+            x, y = [list(tuple) for tuple in tuples]
+            
+            plt.plot(x, y, label="Buffer size: " + str(buffersize))
+        
+        plt.xlabel("Maximum error")
+        plt.ylabel("Average error")
+        plt.legend()
+        plt.show()
 
 
 if __name__ == "__main__":
