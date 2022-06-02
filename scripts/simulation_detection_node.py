@@ -8,7 +8,7 @@ import utility
 
 
 from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
-from utility import averageQuaternions
+from utility import averageQuaternions, close_to_mean
 from gazebo_msgs.msg import ModelStates
 
 class Tag:
@@ -35,7 +35,7 @@ class Tag:
             return False
         return (rospy.get_rostime().to_sec() - self.latest_detection.to_sec()) < self.max_time_diff
     
-    def detected(self, detection, max_error=0.1):
+    def detected(self, detection, max_error=0.1, filter_mode='mean'):
         """
         Adds the latest detection to the buffer and checks if the buffer is full
         -   detection: the transform of the detection of this specific tag
@@ -43,7 +43,12 @@ class Tag:
         if not self.valid_latest_detection():               #check if the time difference is too big and clear the buffer
             self.detections = []
         
-        if utility.close_to_median(self.detections, detection, max_error=max_error):
+        if filter_mode == 'mean':
+            close_to_mode = utility.close_to_mean
+        elif filter_mode == 'median':
+            close_to_mode = utility.close_to_median
+        
+        if close_to_mode(self.detections, detection, max_error=max_error):
             self.detections.append(detection)
             self.latest_detection = rospy.get_rostime()
         else:

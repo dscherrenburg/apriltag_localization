@@ -187,8 +187,8 @@ if __name__ == '__main__':
     # save_location = rospy.get_param("~test_file_location")
     # save_format = rospy.get_param("~test_file_format")
     
-    # test_location = "/home/daan/localization_ws/src/apriltag_localization/tests"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests"
+    test_location = "/home/daan/localization_ws/src/apriltag_localization/straight_tests"
+    # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests"
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
     # save_name = "test3_buf10_er02_tdiff02"
