@@ -12,7 +12,7 @@ def create_plots(data_location, plots_location, test_name, test_format):
     d = 70
     plt.figure(0)
     fig, ax = plt.subplots()
-    ax.axis([-1.5, -0.5, 1, 2.5])
+    ax.axis([-3, -1, -0.5, 1.8])
     # [time, truex, truey, tagx, tagy, amclx, amcly]
     real_path_data, tag_path_data, amcl_path_data, tag_error, tag_error_x, tag_error_y, time = [], [], [], [], [], [], []
     
@@ -61,12 +61,14 @@ def create_plots(data_location, plots_location, test_name, test_format):
     ax.add_patch(tag_patch)
     ax.add_patch(amcl_patch)
     ax.plot(-1, 2, 'go', label='Starting point')
-    ax.plot(0, 0, 'go', c="r", label='Origin')
+    # ax.plot(0, 0, 'go', c="r", label='Origin')
     plt.legend()
     plt.title("Path estimation")
     plt.xlabel("x")
     plt.ylabel("y")
     plt.savefig(save_location  + "/" + test_name + ".png")
+    
+    plt.close()
 
     # # Error in x
     # dir_name = "tag_error_in_x"
@@ -110,6 +112,8 @@ def create_plots(data_location, plots_location, test_name, test_format):
     plt.ylabel('Error in distance')
     plt.title("Error in global distance of tag estimation")
     plt.savefig(save_location  + "/" + test_name + ".png")
+    
+    plt.close()
 
 
 def plot_table(table_location, table_name="data_table", table_format=".csv"):
@@ -149,8 +153,8 @@ def all_plots(data_location, plots_location, data_name=None, data_format=".csv",
 
 if __name__ == '__main__':
     
-    test_location = "/home/daan/localization_ws/src/apriltag_localization/straight_tests"
-    # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests"
+    # test_location = "/home/daan/localization_ws/src/apriltag_localization/straight_tests"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
 
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
