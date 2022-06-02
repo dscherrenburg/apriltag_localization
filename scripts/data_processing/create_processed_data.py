@@ -57,7 +57,7 @@ def calculate_mean_std(data):
     std = np.std(data)
     return mean, std
 
-def create_data_table_total_avg_error(processed_data_location, processed_data_name, save_location, save_name):
+def create_data_table_total_avg_error(processed_data_location, processed_data_name, save_location, save_name, plot=True):
     data_dict = {}
     with open(processed_data_location + "/" + processed_data_name + ".csv", 'r') as table:
         table_reader = csv.reader(table)
@@ -72,6 +72,11 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
                     data_dict[buffer_size][max_error] = [avg_error]
                 else:
                     data_dict[buffer_size][max_error].append(avg_error)
+                    
+    new_dict = {}
+    for buffer_size in data_dict:
+        new_dict[buffer_size] = {"x": [], "y": []}
+
     
     with open(save_location + "/" + save_name + ".csv", 'w') as new_table:
         new_table_w = csv.writer(new_table)
@@ -84,6 +89,8 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
                 
                 data = [buffer_size, max_error, mean_error]
                 new_table_w.writerow(data)
+        
+    
         
 
 
