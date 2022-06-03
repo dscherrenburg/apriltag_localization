@@ -153,9 +153,9 @@ def all_plots(data_location, plots_location, data_name=None, data_format=".csv",
 
 if __name__ == '__main__':
     
-    test_location = "./turn_tests/mean"
+    # test_location = "./turn_tests/mean"
     # test_location = "/home/beau/localization_ws/src/apriltag_localization/turn_tests/median"
-    #test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/mean"
 
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
@@ -166,6 +166,5 @@ if __name__ == '__main__':
         pass
 
     all_plots(data_location, plots_location)
-    # all_plots(data_location, plots_location)
-    
+
 
