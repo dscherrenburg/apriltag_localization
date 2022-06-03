@@ -2,6 +2,7 @@ import csv
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import math
 
 def create_data_table_per_test(data_location, table_location, data_name, table_name="data_table", data_format=".csv", table_format=".csv"):
     try:
@@ -125,9 +126,9 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
             
             plt.plot(x, y, c=colors[i], label="Buffer size: " + str(int(buffersize)))
         
-        plt.xlabel("Maximum error")
-        plt.ylabel("Average error")
-        plt.title("Average error per buffer size vs maximum error")
+        plt.xlabel("Maximum allowed error (m)")
+        plt.ylabel("Average error (m)")
+        plt.title("Average error per buffer size vs maximum allowed error (Straight, Median filter)")
         plt.legend()
         plt.savefig(save_location + "/" + save_name + ".png")
         
@@ -141,14 +142,14 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
             
             plt.plot(x, y_end, c=colors[i], label="Buffer size: " + str(int(buffersize)))
         
-        plt.xlabel("Maximum error")
-        plt.ylabel("Average end point error")
-        plt.title("Average end point error per buffer size vs maximum error")
+        plt.xlabel("Maximum allowed error (m)")
+        plt.ylabel("Average end point error (m)")
+        plt.title("Average end point error per buffer size vs maximum allowed error (Straight, Median filter)")
         plt.legend()
         plt.savefig(save_location + "/" + save_name + "_endpoint_error" + ".png")
 
 
-def calculate_amcl_error(processed_data_location, processed_data_name):
+def calculate_avg_amcl_error(processed_data_location, processed_data_name):
     with open(processed_data_location + "/" + processed_data_name + ".csv", 'r') as table:
         table_reader = csv.reader(table)
         header = next(table_reader)
@@ -161,15 +162,50 @@ def calculate_amcl_error(processed_data_location, processed_data_name):
     return avg_amcl_error
 
 
-if __name__ == "__main__":
-    # test_location = "./straight_tests/mean"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
-    data_location = test_location + "/data"
-    table_location = test_location
+def calculate_amcl_endpoint_error(data_location, data_name, data_format=".csv"):
+    last_real_x, last_real_y, last_amcl_x, last_amcl_y = 0, 0, 0, 0
+    with open(data_location + "/" + data_name + data_format, "r") as data:
+        data_reader = csv.reader(data)
+        header = next(data_reader)
+        for row in data_reader:
+            last_real_x = float(row[1])
+            last_real_y = float(row[2])
+            last_amcl_x = float(row[5])
+            last_amcl_y = float(row[6])
+    return math.sqrt((last_real_x - last_amcl_x)**2 + (last_real_y - last_amcl_y)**2)
+
+
+def calculate_avg_amcl_endpoint_error(data_location):
+    amcl_end_errors = []
+    data_files = os.listdir(data_location)
+    for file in data_files:
+        file_name = os.path.splitext(file)[0]
+        file_format = os.path.splitext(file)[1]
+        amcl_end_errors.append(calculate_amcl_endpoint_error(data_location, file_name, data_format=file_format))
     
-    create_data_table_per_test_full(data_location, table_location, table_name="turn_median_processed_test_data_table")
-    create_data_table_total_avg_error(table_location, "turn_median_processed_test_data_table", table_location, "turn_median_total_avg_error_table")
-    print(calculate_amcl_error(table_location, "turn_median_processed_test_data_table"))
+    amcl_end_error = np.mean(amcl_end_errors)
+    return amcl_end_error
+
+if __name__ == "__main__":
+    test_location = "./turn_tests/mean"
+    # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
+    data_location_csv = test_location + "/data"
+    proces_data_save_location = test_location
+    
+    data_per_test_save_name = "turn_mean_processed_test_data_table"
+    data_per_buffersize_save_name = "turn_mean_processed_buffersize_data_table"
+    
+    print("Proccessed data: " + data_per_test_save_name)
+    
+    # Create a csv file with avg error for every test
+    create_data_table_per_test_full(data_location_csv, proces_data_save_location, table_name=data_per_test_save_name)
+    
+    # Processes the table for every test to get avgg errors per buffer size and max error
+    create_data_table_total_avg_error(proces_data_save_location, data_per_test_save_name, proces_data_save_location, data_per_buffersize_save_name)
+    
+    # Process data and print the amcl errors
+    print("AMCL average error: " +  str(calculate_avg_amcl_error(proces_data_save_location, data_per_test_save_name)))
+    print("AMCL average end point error: " +  str(calculate_avg_amcl_endpoint_error(data_location_csv)))
     
     
     
