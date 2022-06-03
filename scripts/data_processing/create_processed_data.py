@@ -126,9 +126,9 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
             
             plt.plot(x, y, c=colors[i], label="Buffer size: " + str(int(buffersize)))
         
-        plt.xlabel("Maximum error")
-        plt.ylabel("Average error")
-        plt.title("Average error per buffer size vs maximum error")
+        plt.xlabel("Maximum allowed error (m)")
+        plt.ylabel("Average error (m)")
+        plt.title("Average error per buffer size vs maximum allowed error (Straight, Median filter)")
         plt.legend()
         plt.savefig(save_location + "/" + save_name + ".png")
         
@@ -142,9 +142,9 @@ def create_data_table_total_avg_error(processed_data_location, processed_data_na
             
             plt.plot(x, y_end, c=colors[i], label="Buffer size: " + str(int(buffersize)))
         
-        plt.xlabel("Maximum error")
-        plt.ylabel("Average end point error")
-        plt.title("Average end point error per buffer size vs maximum error")
+        plt.xlabel("Maximum allowed error (m)")
+        plt.ylabel("Average end point error (m)")
+        plt.title("Average end point error per buffer size vs maximum allowed error (Straight, Median filter)")
         plt.legend()
         plt.savefig(save_location + "/" + save_name + "_endpoint_error" + ".png")
 
