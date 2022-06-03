@@ -187,13 +187,13 @@ def calculate_avg_amcl_endpoint_error(data_location):
     return amcl_end_error
 
 if __name__ == "__main__":
-    # test_location = "./straight_tests/mean"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
+    test_location = "./turn_tests/mean"
+    # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
     data_location_csv = test_location + "/data"
     proces_data_save_location = test_location
     
-    data_per_test_save_name = "turn_median_processed_test_data_table"
-    data_per_buffersize_save_name = "turn_median_processed_buffersize_data_table"
+    data_per_test_save_name = "turn_mean_processed_test_data_table"
+    data_per_buffersize_save_name = "turn_mean_processed_buffersize_data_table"
     
     print("Proccessed data: " + data_per_test_save_name)
     
