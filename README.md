@@ -72,7 +72,7 @@ standalone_tags:
 ```
 #### Change the filepaths to import the Tiago robot (not mandatory)
 1. Open the file set_gazebo_env.sh with filepath: /localization_ws/src/retail_store_simulation/scripts/set_gazebo_env.sh
-2. Change #NAME# to the username of your computer. 
+2. Change #NAME# to the username of your computer. (for example: daan)
 
 ## Start testing
 ```
