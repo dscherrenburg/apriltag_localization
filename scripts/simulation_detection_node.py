@@ -318,7 +318,7 @@ if __name__ == '__main__':
                   "Filter mode: " + filter_mode + "\n")
     
     rospy.loginfo("Waiting to start localization")
-    rospy.sleep(1)
+    rospy.sleep(3)
     
     tag_localization = VisualLocalization(tag_combination_mode=localization_method, 
                                           buffer_size=buffer_size, 
