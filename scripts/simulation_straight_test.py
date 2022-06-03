@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     rospy.loginfo("Set correct initial pose")
     
-    rospy.sleep(3)
+    rospy.sleep(1)
     
     try: 
         os.makedirs(save_location)
