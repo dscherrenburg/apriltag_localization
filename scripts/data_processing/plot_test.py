@@ -155,7 +155,7 @@ if __name__ == '__main__':
     
     test_location = "./turn_tests/mean"
     # test_location = "/home/beau/localization_ws/src/apriltag_localization/turn_tests/median"
-    # test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
+    #test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/median"
 
     data_location = test_location + "/data"
     plots_location = test_location + "/plots"
