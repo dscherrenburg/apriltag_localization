@@ -1,11 +1,11 @@
 #!/usr/bin/python
-import numpy as np
+from numpy import angle
 import rospy
 from geometry_msgs.msg import Twist
 import csv 
 import tf
 import os
-from gazebo_msgs.msg import ModelStates
+from simulation_turn_test import MoveAndTurn
 
 
 class Move:
@@ -31,10 +31,9 @@ class Rotate:
         
 
 class RealMoveTest:
-    def __init__(self, save_location, shutdown_time = 1, moves = []):
+    def __init__(self, save_location, moves = []):
         self.save_location = save_location
         self.movement_completed = False
-        self.shutdown_time = shutdown_time
         self.moves = moves
         self.robot_name = "tiago_dual"
         
@@ -67,8 +66,8 @@ class RealMoveTest:
                     self.publisher_vel.publish(move.move())
                     
                     self.publish_rate.sleep()
+                        
                     
-                
                 rospy.sleep(1)
                 start_time = rospy.get_rostime().to_sec()
             
@@ -114,11 +113,11 @@ if __name__ == '__main__':
     except OSError as fail: 
         pass
     
-    speed = 1
-    distance = 2.0
-    time = distance/speed
-    moves = [Move(time, speed), Move(time, -speed)]
+    time = 1.5
+    angle = -1.0
+    speed = 0.30
+    moves = [MoveAndTurn(time, speed, angle), MoveAndTurn(time, -speed, -angle), Move(2, -0.25)]
     
     move_square_test = RealMoveTest(save_location + "/" + save_name + save_format, moves=moves)
     
-    move_square_test.move()
+    move_square_test.move() 

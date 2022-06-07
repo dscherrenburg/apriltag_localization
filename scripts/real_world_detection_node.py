@@ -8,7 +8,7 @@ import utility
 
 
 from geometry_msgs.msg import TransformStamped, PoseWithCovarianceStamped
-from utility import averageQuaternions
+from utility import averageQuaternions, close_to_mean
 from gazebo_msgs.msg import ModelStates
 
 class Tag:
@@ -30,48 +30,62 @@ class Tag:
         self.latest_distance_to_tag = None
 
     def valid_latest_detection(self):
-        """Checks the latest detection has not expired"""   
+        """Checks the latest detection has not expired, returns True if latest detection is valid"""   
         if self.latest_detection is None:
             return False
         return (rospy.get_rostime().to_sec() - self.latest_detection.to_sec()) < self.max_time_diff
     
-    def detected(self, detection):
+    def detected(self, detection, max_error=0.1, filter_mode='mean'):
         """
         Adds the latest detection to the buffer and checks if the buffer is full
         -   detection: the transform of the detection of this specific tag
         """
         if not self.valid_latest_detection():               #check if the time difference is too big and clear the buffer
             self.detections = []
+        
+        if filter_mode == 'mean':
+            close_to_mode = utility.close_to_mean
+        elif filter_mode == 'median':
+            close_to_mode = utility.close_to_median
+        
+        if close_to_mode(self.detections, detection, max_error=max_error):
+            self.detections.append(detection)
+            self.latest_detection = rospy.get_rostime()
+        else:
+            pass
+            # rospy.loginfo("########## Detection to far from median #########")
             
-        self.latest_detection = rospy.get_rostime()         #update the latest detection time
-        self.detections.append(detection)                   #add the detection to the buffer
+        # self.latest_detection = rospy.get_rostime()         #update the latest detection time
+        # self.detections.append(detection)                   #add the detection to the buffer
         
         if len(self.detections) > self.buffer_size:         #if the buffer is too big, remove the oldest detection
             self.detections = self.detections[-self.buffer_size:]
-        
 
-    def moving_avg(self, max_error=0.1):
+    def moving_avg(self):
         """
         calculates the moving average of the detections. Returns the average pose or none if the buffer is empty.
         -   max_error: the maximum error for the median outlier filter
         """
         # Generates seperate lists with the positions and with the orientation in quaternions
-        position, q = [], []
+        position, q, list_x, list_y, list_z = [], [], [], [], []
         for tf in self.detections:
-            position.append([tf[0][0], tf[0][1], tf[0][2]])
+            # position.append([tf[0][0], tf[0][1], tf[0][2]])
             q.append([tf[1][3], tf[1][0], tf[1][1], tf[1][2]])
+            list_x.append(tf[0][0])
+            list_y.append(tf[0][1])
+            list_z.append(tf[0][2])
         
-        # Filters the outliers
-        filtered = utility.median_outlier_filter(position, max_error)
-        filtered_x, filtered_y, filtered_z = filtered
+        # # Filters the outliers
+        # filtered = utility.median_outlier_filter(position, max_error)
+        # filtered_x, filtered_y, filtered_z = filtered
 
         # calculate the moving average of the detections
         moving_avg = ([0, 0, 0], [0, 0, 0, 0])
-        if len(filtered_x) == 0:
+        if len(list_x) == 0:
             return 0
-        moving_avg[0][0] = sum(filtered_x) / len(filtered_x)
-        moving_avg[0][1] = sum(filtered_y) / len(filtered_y)
-        moving_avg[0][2] = sum(filtered_z) / len(filtered_z)
+        moving_avg[0][0] = sum(list_x) / len(list_x)
+        moving_avg[0][1] = sum(list_y) / len(list_y)
+        moving_avg[0][2] = sum(list_z) / len(list_z)
 
         # calculate the average of the quaternions in the detections
         q_avg = averageQuaternions(np.matrix(q))
@@ -110,15 +124,16 @@ class Robot:
 class VisualLocalization:
     """Class for the calculation of the position of the robot in the world,
        using the position of the tags and the transforms from the robot to the tags."""
-    def __init__(self, tag_combination_mode="weighted_average", filter_mode="median_outlier", buffer_size=10, max_time_diff=0.2, max_error=0.1):
+    def __init__(self, tag_combination_mode="weighted_average", filter_mode="median", buffer_size=10, max_time_diff=0.2, max_error=0.1):
         """
         -   tag_combination_mode: method for the combining of the estimations from seperate tags. ("weighted average", "average")
-        -   filter_mode: method for filtering outliers. ("median_outlier")
+        -   filter_mode: method for filtering outliers. ("median", "mean")
         """
         self.tag_combination_mode = tag_combination_mode
         self.buffer_size = buffer_size
         self.max_time_diff = max_time_diff
         self.max_error = max_error
+        self.filter_mode = filter_mode
         
         # Imports the location of the tags in the world
         self.world_loc_tags = rosparam.get_param('apriltag_localization/tags')
@@ -130,18 +145,11 @@ class VisualLocalization:
         
         self.tags = {'tag_1': Tag(1, self.world_loc_tags['tag_1'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_3': Tag(3, self.world_loc_tags['tag_3'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_4': Tag(4, self.world_loc_tags['tag_4'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_5': Tag(5, self.world_loc_tags['tag_5'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_7': Tag(7, self.world_loc_tags['tag_7'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_8': Tag(8, self.world_loc_tags['tag_8'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_9': Tag(9, self.world_loc_tags['tag_9'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_10': Tag(10, self.world_loc_tags['tag_10'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size), 
                      'tag_11': Tag(11, self.world_loc_tags['tag_11'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_12': Tag(12, self.world_loc_tags['tag_12'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_13': Tag(13, self.world_loc_tags['tag_13'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_15': Tag(15, self.world_loc_tags['tag_15'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_16': Tag(16, self.world_loc_tags['tag_16'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
-                     'tag_17': Tag(17, self.world_loc_tags['tag_17'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size),
                      'tag_18': Tag(18, self.world_loc_tags['tag_18'], max_time_diff=self.max_time_diff, buffer_size=self.buffer_size)
                      }
         rospy.loginfo("Created tag objects")
@@ -160,8 +168,8 @@ class VisualLocalization:
             if tf_odom_to_tag is None:
                 continue
              
-            self.tags[tag].detected(tf_odom_to_tag)
-            moving_avg = self.tags[tag].moving_avg(max_error=self.max_error)
+            self.tags[tag].detected(tf_odom_to_tag, max_error=self.max_error, filter_mode=self.filter_mode)
+            moving_avg = self.tags[tag].moving_avg()
             
             world_to_odom = self.calculate_world_position(tag, moving_avg)
             self.tags[tag].latest_distance_to_tag = utility.distance_robot_tag(moving_avg)
@@ -169,8 +177,9 @@ class VisualLocalization:
             
             combined_world_to_odom = self.combining_visible_tags()
             
+
             self.publish_tf_map_to_tag(tag)
-            self.publish_tf_map_to_robot(combined_world_to_odom) 
+            self.publish_tf_map_to_robot(combined_world_to_odom)    
 
 
     def calculate_world_position(self, tag_name, tf_odom_to_tag):
@@ -243,16 +252,16 @@ class VisualLocalization:
         return avg_tf_matrix
     
     
-    def get_tf_robot_to_tag(self, tag, robot_frame, max_time_diff=0.2):
+    def get_tf_robot_to_tag(self, tag, robot_frame):
         """
         Returns the transform from the robot_frame to the tag_frame
         -    tag:         Tag object
         -    robot_frame: the frame in which you want to calculate the transform to the tag
         """
-        
         try:
             t = self.transform_listener.getLatestCommonTime(robot_frame, tag)
             t_now = rospy.Time().now()
+            # rospy.loginfo(t_now.to_sec()-t.to_sec())
             if t_now.to_sec() - t.to_sec() < self.max_time_diff:
                 self.transform_listener.waitForTransform(robot_frame, tag, rospy.Time(0), rospy.Duration(0.3))
                 tf_robot_to_tag = self.transform_listener.lookupTransform(robot_frame, tag, rospy.Time(0))
@@ -286,24 +295,29 @@ class VisualLocalization:
 
 if __name__ == '__main__':
     rospy.init_node('tag_localization')
-    rospy.loginfo("Start up node")
+    rospy.loginfo("Start up localization node")
     
     localization_method = rospy.get_param("~localization_method")
     buffer_size = rospy.get_param("~buffer_size")
     max_time_diff = rospy.get_param("~max_time_diff")
     max_error = rospy.get_param("~max_error")
+    filter_mode = rospy.get_param("~filter_mode")
     
     rospy.loginfo("\nStarted localization with parameters: \n" + \
                   "Localization method: " + localization_method + "\n" + \
                   "Buffer size: " + str(buffer_size) + "\n" + \
                   "Max time diff: " + str(max_time_diff) + "\n" + \
-                  "Max error: " + str(max_error))
+                  "Max error: " + str(max_error) + "\n" + \
+                  "Filter mode: " + filter_mode + "\n")
     
+    rospy.loginfo("Waiting to start localization")
+    rospy.sleep(1)
     
     tag_localization = VisualLocalization(tag_combination_mode=localization_method, 
                                           buffer_size=buffer_size, 
                                           max_time_diff=max_time_diff,
-                                          max_error=max_error)
+                                          max_error=max_error,
+                                          filter_mode=filter_mode)
     
     rate = rospy.Rate(60)
     while not rospy.is_shutdown():
