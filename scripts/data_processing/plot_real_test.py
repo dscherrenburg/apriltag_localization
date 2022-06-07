@@ -68,8 +68,6 @@ def all_plots(data_location, plots_location):
         create_plots(data_location, plots_location, file_name, file_format)
 
 
-
-
 if __name__ == '__main__':
     
     # test_location = "./turn_tests/mean"
