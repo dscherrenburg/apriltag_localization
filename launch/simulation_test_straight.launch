@@ -9,9 +9,9 @@
     <arg name="buffer_size" default="10"/>
     <arg name="max_time_diff" default="0.2"/>
     <arg name="max_error" default="0.2"/>
-    <arg name="filter_mode" default="median"/>
+    <arg name="filter_mode" default="mean"/>
 
-    <arg name="save_location" default="$(find apriltag_localization)/straight_tests/median/data"/>
+    <arg name="save_location" default="$(find apriltag_localization)/straight_tests/mean/data"/>
     <arg name="save_name" default="test_buf_er_tdiff"/>
     <arg name="save_format" default=".csv"/>
 
