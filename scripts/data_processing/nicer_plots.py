@@ -138,6 +138,8 @@ def realpath_vs_simpath():
     
     ax2.set_title("Real-world path estimates", fontsize=8)
     ax2.set_xlabel("x (m)")
+    ax2.axes.yaxis.set_ticklabels([])
+
     
     
     ax1.set_title("Simulation path estimates and ground truth", fontsize=8)
@@ -149,6 +151,60 @@ def realpath_vs_simpath():
     plt.savefig("./straight_line_tests_real_vs_simulation.png", dpi=300)
     plt.show()
     
+
+def create_plot_avg_error_median_mean_straight_test():
+    median_test_location = "C:\\Users\\levij\\TU Delft\\BEP\\apriltag_localization\\straight_tests\\median\\straight_median_processed_buffersize_data_table.csv"
+    mean_test_location = "C:\\Users\\levij\\TU Delft\\BEP\\apriltag_localization\\straight_tests\\mean\\straight_mean_processed_buffersize_data_table.csv"
+    
+    plot_dict_median = {buffer_size: [[], []] for buffer_size in [10, 20, 30]}
+    with open(median_test_location, "r") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        for row in reader:
+            buffer_size, max_error, error, end_error = [float(row[i]) for i in range(len(row))]
+            plot_dict_median[buffer_size][0].append(max_error)
+            plot_dict_median[buffer_size][1].append(error)
+    
+    plot_dict_mean = {buffer_size: [[], []] for buffer_size in [10, 20, 30]}
+    with open(mean_test_location, "r") as f:
+        reader = csv.reader(f)
+        header = next(reader)
+        for row in reader:
+            buffer_size, max_error, error, end_error = [float(row[i]) for i in range(len(row))]
+            plot_dict_mean[buffer_size][0].append(max_error)
+            plot_dict_mean[buffer_size][1].append(error)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True)
+    
+    colors = ["r","b","g","y","c","m","k"]
+    for i, buffersize in enumerate(plot_dict_median):
+        zipped_list = zip(plot_dict_median[buffersize][0], plot_dict_median[buffersize][1])
+        sorted_list = sorted(zipped_list)
+        print(sorted_list)
+        tuples = zip(*sorted_list)
+        x, y = [list(tuple) for tuple in tuples]
+        ax1.plot(x, y, color=colors[i], label="Buffer size: {}".format(buffersize))
+    
+    for i, buffersize in enumerate(plot_dict_mean):
+        zipped_list = zip(plot_dict_mean[buffersize][0], plot_dict_mean[buffersize][1])
+        sorted_list = sorted(zipped_list, key=lambda x: x[0])
+        tuples = zip(*sorted_list)
+        x, y = [list(tuple) for tuple in tuples]
+        ax2.plot(x, y, color=colors[i], label="Buffer size: {}".format(int(buffersize)))
+
+    ax1.set_title("Median error", fontsize=10)
+    ax1.set_xlabel("Maximum allowed error (m)")
+    ax1.set_ylabel("Average path error (m)")
+    
+    ax2.set_title("Mean error", fontsize=10)
+    ax2.set_xlabel("Maximum allowed error (m)")
+    ax2.legend()
+    
+    fig.suptitle("Average path error vs maximum allowed error per buffer size\n(Straight-line test)", fontsize=12)
+    plt.show()
+
+
+
 
 if __name__ == '__main__':
     realpath_vs_simpath()
