@@ -188,20 +188,20 @@ def calculate_avg_amcl_endpoint_error(data_location):
 
 if __name__ == "__main__":
     # test_location = "./turn_tests/mean"
-    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/turn_tests/mean"
+    test_location = "/home/levijn/BEP/simulation_ws/src/apriltag_localization/straight_tests/mean"
     data_location_csv = test_location + "/data"
     proces_data_save_location = test_location
     
-    data_per_test_save_name = "turn_mean_processed_test_data_table" 
-    data_per_buffersize_save_name = "turn_mean_processed_buffersize_data_table"
+    data_per_test_save_name = "straight_mean_processed_test_data_table" 
+    data_per_buffersize_save_name = "straight_mean_processed_buffersize_data_table"
 
     print("Proccessed data: " + data_per_test_save_name)
     
     # Create a csv file with avg error for every test
-    # create_data_table_per_test_full(data_location_csv, proces_data_save_location, table_name=data_per_test_save_name)
+    create_data_table_per_test_full(data_location_csv, proces_data_save_location, table_name=data_per_test_save_name)
     
     # Processes the table for every test to get avgg errors per buffer size and max error
-    # create_data_table_total_avg_error(proces_data_save_location, data_per_test_save_name, proces_data_save_location, data_per_buffersize_save_name)
+    create_data_table_total_avg_error(proces_data_save_location, data_per_test_save_name, proces_data_save_location, data_per_buffersize_save_name)
     
     # Process data and print the amcl errors
     print("AMCL average error: " +  str(calculate_avg_amcl_error(proces_data_save_location, data_per_test_save_name)))
